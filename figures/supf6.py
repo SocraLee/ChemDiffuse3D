@@ -1,7 +1,7 @@
 """
 Sup_Fig_5_ablation.pdf — Decoder Ablation: violin plot comparison
 Methods:
-  - MicroDiffuse3D + adapted decoder  (SiTfromPretrainRcan)
+  - MicroDiffuse3D + adapted decoder  (SiTfromPretrainAdapted)
   - MicroDiffuse3D + VAE decoder      (SiTfromPretrain)
   - 3DRCAN                            (RCAN)
 Dataset: 3DSR (3DSR4z_comparision/metrics.h5)
@@ -23,7 +23,7 @@ h5_path = ('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
 
 # HDF5 key prefix → display name
 methods = {
-    'SiTfromPretrainRcan': 'Ours w/ adapted decoder',
+    'SiTfromPretrainAdapted': 'Ours w/ adapted decoder',
     'SiTfromPretrain':     'Ours w/ VAE decoder',
     'RCAN':                '3DRCAN',
 }
@@ -50,18 +50,6 @@ with h5py.File(h5_path, 'r') as f:
 
 df = pd.DataFrame(rows)
 
-# ── 3. Print summary ──
-print("\n" + "=" * 70)
-print("  Decoder Ablation Summary (3DSR dataset)")
-print("=" * 70)
-for metric_label in metrics_map.values():
-    sub = df[df['Metric'] == metric_label]
-    print(f"\n  {metric_label}:")
-    for name in methods.values():
-        vals = sub[sub['Method'] == name]['Value']
-        print(f"    {name.replace(chr(10), ' '):<40s}  "
-              f"{vals.mean():.4f} ± {vals.std():.4f}")
-print("=" * 70 + "\n")
 
 # ── 4. Plot ──
 method_order = list(methods.values())
@@ -106,7 +94,4 @@ fig.legend(handles=legend_handles, loc='upper center',
 
 plt.subplots_adjust(left=0.06, right=0.98, top=0.85, bottom=0.06)
 plt.savefig('../outputs/Sup_Fig_6.pdf', dpi=600, transparent=True)
-print("Saved: ../outputs/Sup_Fig_6.pdf")
 plt.close(fig)
-
-print("Done!")

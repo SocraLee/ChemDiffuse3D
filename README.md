@@ -5,7 +5,6 @@
 This repository contains the source code accompanying the following manuscript in preparation:
 
 > **ChemDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration**
-> Yongkang Li et al.
 
 ChemDiffuse3D is a conditional diffusion model for volumetric (3D) microscopy image restoration. It addresses multiple restoration tasks within a single unified framework:
 
@@ -224,7 +223,7 @@ ChemDiffuse3D/
 │   │   ├── attention.py         # Anisotropic lateral-axial attention
 │   │   ├── unet3d.py            # LR conditioning encoder-decoder
 │   │   ├── decoder.py           # RCAN & Fused post-diffusion decoders
-│   │   ├── utils.py             # Positional embeddings (1D/2D/3D sinusoidal)
+│   │   ├── utils.py             # Positional embeddings
 │   │   └── rope.py              # Rotary position embeddings
 │   └── data/
 │       ├── dataset.py           # HDF5-based dataset classes

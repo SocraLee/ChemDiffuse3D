@@ -66,26 +66,23 @@ def computer_metrics(hr, lr, baseline, ours) -> pd.DataFrame:
 
 
 if os.path.exists(cache_file) and read_cache:
-    print(f"Found cache file '{cache_file}'. Loading data directly...")
     df = pd.read_csv(cache_file)
-    print("Loading image tensors for Panel C...")
     data = h5py.File('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
                      'ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
-    sit = torch.from_numpy(data['sit_pretrain_output_rcan'][:]).squeeze()
+    sit = torch.from_numpy(data['sit_pretrain_output_adapted'][:]).squeeze()
     rcan = torch.from_numpy(data['RCAN_output'][:]).squeeze()
     if hr.shape != lr.shape:
         inputs = lr.unsqueeze(1)
         lr = F.interpolate(inputs, size=(hr.shape[1], 256, 256),
                            mode='trilinear', align_corners=False).squeeze(1)
 else:
-    print("Cache not found. Loading tensors and computing metrics...")
     data = h5py.File('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
                      'ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
-    sit = torch.from_numpy(data['sit_pretrain_output_rcan'][:]).squeeze()
+    sit = torch.from_numpy(data['sit_pretrain_output_adapted'][:]).squeeze()
     rcan = torch.from_numpy(data['RCAN_output'][:]).squeeze()
     if hr.shape != lr.shape:
         inputs = lr.unsqueeze(1)
@@ -95,33 +92,7 @@ else:
     df.to_csv(cache_file, index=False)
 
 
-# ──────────────────────────────────────────────────────────────
-# Print 3DRCAN vs Ours differences for all metrics
-# ──────────────────────────────────────────────────────────────
-metrics_to_compare = ['PCC', 'CCC', 'N-RMSE', '1D-SSIM']
-df_rcan = df[df['Method'] == '3DRCAN']
-df_ours = df[df['Method'] == 'Ours']
 
-print("\n" + "=" * 60)
-print("  3DRCAN vs Ours: metric comparison (mean ± std)")
-print("=" * 60)
-for m in metrics_to_compare:
-    rcan_mean = df_rcan[m].mean()
-    rcan_std = df_rcan[m].std()
-    ours_mean = df_ours[m].mean()
-    ours_std = df_ours[m].std()
-    diff = ours_mean - rcan_mean
-    if 'RMSE' in m:
-        # lower is better
-        print(f"  {m:>8s}:  3DRCAN = {rcan_mean:.4f} ± {rcan_std:.4f}  |  "
-              f"Ours = {ours_mean:.4f} ± {ours_std:.4f}  |  "
-              f"Δ = {diff:+.4f} (Ours {'lower ✓' if diff < 0 else 'higher ✗'})")
-    else:
-        # higher is better
-        print(f"  {m:>8s}:  3DRCAN = {rcan_mean:.4f} ± {rcan_std:.4f}  |  "
-              f"Ours = {ours_mean:.4f} ± {ours_std:.4f}  |  "
-              f"Δ = {diff:+.4f} (Ours {'higher ✓' if diff > 0 else 'lower ✗'})")
-print("=" * 60 + "\n")
 
 # ──────────────────────────────────────────────────────────────
 # Helpers
@@ -291,7 +262,6 @@ ax_ccc.set_ylim(y_lo, y_text + (y_hi - y_lo) * 0.10)
 
 plt.subplots_adjust(left=0.05, right=0.98, top=0.85, bottom=0.20)
 plt.savefig('../outputs/Figure_4_Panel_cd.pdf', dpi=600, transparent=True)
-print("Saved: ../outputs/Figure_4_Panel_cd.pdf")
 plt.close(fig)
 
 
@@ -322,36 +292,4 @@ for i, (metric, ylabel) in enumerate(metric_list):
 
 plt.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.06)
 plt.savefig('../outputs/Sup_Fig_5.pdf', dpi=600, transparent=True)
-print("Saved: ../outputs/Sup_Fig_5.pdf")
 plt.close(fig5)
-
-# ──────────────────────────────────────────────────────────────
-# Find best (sample, slice) pairs for line-profile visualization
-# Criteria: Ours CCC > 0.7, CCC diff > 0.2, sorted by Ours CCC
-# ──────────────────────────────────────────────────────────────
-ours_df = df[df['Method'] == 'Ours'][['Sample_Idx', 'Slice_Idx', 'CCC']].copy()
-rcan_df = df[df['Method'] == '3DRCAN'][['Sample_Idx', 'Slice_Idx', 'CCC']].copy()
-
-merged = pd.merge(ours_df, rcan_df, on=['Sample_Idx', 'Slice_Idx'],
-                  suffixes=('_ours', '_rcan'))
-merged['CCC_diff'] = merged['CCC_ours'] - merged['CCC_rcan']
-
-valid = merged[(merged['CCC_ours'] > 0.85) & (merged['CCC_rcan'] > 0.5)]
-
-print("\n" + "=" * 80)
-if len(valid) > 0:
-    valid = valid.sort_values('CCC_diff', ascending=False)
-    print(f"  Best line-profile candidates: Ours CCC > 0.85, 3DRCAN CCC > 0.5, sorted by Diff  "
-          f"({len(valid)} found, showing top 15)")
-    print("=" * 80)
-    for _, row in valid.head(15).iterrows():
-        print(f"  Sample_Idx: {int(row['Sample_Idx']):<5} | "
-              f"Slice_Idx: {int(row['Slice_Idx']):<3} | "
-              f"Ours CCC: {row['CCC_ours']:.4f} | "
-              f"3DRCAN CCC: {row['CCC_rcan']:.4f} | "
-              f"Diff: {row['CCC_diff']:.4f}")
-else:
-    print("  No slices found matching criteria (Ours CCC > 0.85, 3DRCAN CCC > 0.5)")
-print("=" * 80)
-
-print("\nDone!")

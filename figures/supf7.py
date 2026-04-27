@@ -40,7 +40,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Methods shown in RPS (spectral) plots
 RPS_METHODS = OrderedDict([
-    ('sit_pretrain_output_rcan', 'Ours'),
+    ('sit_pretrain_output_adapted', 'Ours'),
     ('RCAN_output',              '3DRCAN'),
     ('SwinIR_output',            'SwinIR'),
 ])
@@ -111,17 +111,15 @@ def analyze_fft(f, key, N):
 
 # ── Phase 1: FFT cache (cutoff-independent) ──
 if os.path.exists(CACHE_FILE):
-    print(f"Loading: {CACHE_FILE}")
     with open(CACHE_FILE, 'rb') as fp: fft_cache = pickle.load(fp)
 else:
-    print(f"Computing FFT on {device} ...")
     fft_cache = {}
     with h5py.File(H5_PATH, 'r') as f:
         N = f['hr'].shape[0]; avail = set(f.keys())
-        print("-> Ground Truth"); fft_cache['Ground Truth'] = analyze_fft(f, 'hr', N)
+        fft_cache['Ground Truth'] = analyze_fft(f, 'hr', N)
         for k, nm in ALL_METHODS.items():
-            if k not in avail: print(f"  skip {nm}"); continue
-            print(f"-> {nm}"); fft_cache[nm] = analyze_fft(f, k, N)
+            if k not in avail: continue
+            fft_cache[nm] = analyze_fft(f, k, N)
     with open(CACHE_FILE, 'wb') as fp: pickle.dump(fft_cache, fp)
 
 # ── Phase 1b: Derive HF metrics from cached radial profiles (cheap) ──
@@ -156,40 +154,6 @@ def compute_hf_metrics(fft_cache, cutoff):
 
 results = compute_hf_metrics(fft_cache, HF_CUTOFF)
 
-# ── Summary ──
-print(f"\n  HF_CUTOFF = {HF_CUTOFF} cycles/pixel")
-print("="*90)
-print(f"  {'Method':<14s} {'RMSE':>16s}  {'Lat HF Err':>16s}  {'Ax HF Err':>16s}"
-      f"  {'Lat HF Pow':>16s}  {'Ax HF Pow':>16s}")
-print("-"*90)
-for n in list(ALL_METHODS.values())+['Ground Truth']:
-    if n not in results: continue
-    r = results[n]
-    print(f"  {n:<14s} {r['rmse'][0]:.4f}+/-{r['rmse'][1]:.4f}"
-          f"  {r['hf_lat'][0]:.4f}+/-{r['hf_lat'][1]:.4f}"
-          f"  {r['hf_ax'][0]:.4f}+/-{r['hf_ax'][1]:.4f}"
-          f"  {r['hfpow_lat'][0]:.2e}+/-{r['hfpow_lat'][1]:.2e}"
-          f"  {r['hfpow_ax'][0]:.2e}+/-{r['hfpow_ax'][1]:.2e}")
-print("="*90)
-
-# ── HF Power vs. Cutoff sweep (Ours & 3DRCAN) ──
-print("\n  HF Power from radial spectra at different cutoffs:")
-print(f"  {'Cutoff':>10s}  {'Ours Lat':>12s}  {'3DRCAN Lat':>12s}"
-      f"  {'Ours Ax':>12s}  {'3DRCAN Ax':>12s}")
-print("  "+"-"*62)
-for c in [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45]:
-    row = f"  {c:>10.3f}"
-    for key in ('lateral_radial', 'axial_radial'):
-        for nm in ('Ours', '3DRCAN'):
-            if nm not in fft_cache:
-                row += f"  {'N/A':>12s}"; continue
-            rps = fft_cache[nm][key]
-            mr = len(rps)
-            freq = np.arange(mr) / (2*mr)
-            hf_power = rps[freq > c].mean() if (freq > c).any() else 0.0
-            row += f"  {hf_power:>12.2e}"
-    print(row)
-print()
 
 # ── Phase 2: Plot ──
 rps_order = ['3DRCAN', 'SwinIR', 'RLN', 'CARE', 'SRCNN', 'Ours']  # Ours last (on top)
@@ -288,8 +252,8 @@ with h5py.File(H5_PATH, 'r') as f:
         imgs_c['3DRCAN'] = np.array(f['RCAN_output'][idx_target]).squeeze()[z_target]
     elif 'hr' in f: imgs_c['3DRCAN'] = np.array(f['hr'][idx_target]).squeeze()[z_target]
     
-    if 'sit_pretrain_output_rcan' in f:
-        imgs_c['Ours'] = np.array(f['sit_pretrain_output_rcan'][idx_target]).squeeze()[z_target]
+    if 'sit_pretrain_output_adapted' in f:
+        imgs_c['Ours'] = np.array(f['sit_pretrain_output_adapted'][idx_target]).squeeze()[z_target]
     elif 'hr' in f: imgs_c['Ours'] = np.array(f['hr'][idx_target]).squeeze()[z_target]
 
 for i, name in enumerate(img_names):
@@ -314,5 +278,4 @@ for i, name in enumerate(img_names):
 
 os.makedirs('../outputs', exist_ok=True)
 plt.savefig(OUT_PDF, dpi=600, transparent=True)
-print(f"\nSaved: {OUT_PDF}")
-plt.close(fig); print("Done!")
+plt.close(fig)

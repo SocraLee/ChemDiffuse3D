@@ -37,7 +37,7 @@ def load_data(idx=1281, data_path=None, use_cache=False):
     if data_path is None:
         data_path = ('../../../../../../../../m-chimera/chimera/nobackup/'
                      'yongkang/ChemDiffuse/3DSR4z_comparision/results.h5')
-    print(f'[cube_visual] Reading h5 (idx={idx}) …')
+
     with h5py.File(data_path, 'r') as f:
         hr = np.array(f['hr'][idx]).squeeze()
         lr = np.array(f['lr'][idx]).squeeze()
@@ -46,8 +46,6 @@ def load_data(idx=1281, data_path=None, use_cache=False):
             pred = np.array(f['sit_pretrain_output'][idx]).squeeze()
         elif 'SiTfromPretrain' in f:
             pred = np.array(f['SiTfromPretrain'][idx]).squeeze()
-    print(f'[cube_visual] HR {hr.shape}, LR {lr.shape}'
-          f', Pred {pred.shape if pred is not None else "N/A"}')
     return hr, lr, pred
 
 def generate_mask(nd, nh, nw, ratio=0.75, seed=42):
@@ -273,8 +271,7 @@ def make_figure(idx=1281, data_path=None,
 
     phys_z = D_hr * Z_PIXEL_SIZE
     phys_xy = H * XY_PIXEL_SIZE
-    print(f'[cube_visual] Physical: {phys_z:.1f} × {phys_xy:.1f} × {phys_xy:.1f} µm'
-          f'  |  z_stretch={z_stretch}  visual depth={phys_z*z_stretch:.1f} µm')
+
 
     dpi = 300 if hires else 200
     fig = plt.figure(figsize=(210*mm, 120*mm), dpi=dpi)
@@ -367,7 +364,7 @@ def make_figure(idx=1281, data_path=None,
 
     if save_path:
         plt.savefig(save_path, dpi=dpi, transparent=True)
-        print(f'[cube_visual] Saved → {save_path}')
+
     plt.show()
     return fig
 

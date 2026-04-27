@@ -34,7 +34,7 @@ mm = nature_style.apply_nature_style()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 METHODS = OrderedDict([
-    ('sit_pretrain_output_rcan', 'Ours'),
+    ('sit_pretrain_output_adapted', 'Ours'),
     ('RCAN_output',              '3DRCAN'),
     ('hr',                       'HR'),
 ])
@@ -67,27 +67,16 @@ def analyze(f, key, N):
 
 # ── Phase 1: Cache per-sample Laplacian variance ──
 if os.path.exists(CACHE_FILE):
-    print(f"Loading: {CACHE_FILE}")
     with open(CACHE_FILE, 'rb') as fp: cache = pickle.load(fp)
 else:
-    print(f"Computing on {device} ...")
     cache = {}
     with h5py.File(H5_PATH, 'r') as f:
         N = f['hr'].shape[0]; avail = set(f.keys())
         for k, nm in METHODS.items():
-            if k not in avail: print(f"  skip {nm}"); continue
-            print(f"-> {nm}"); cache[nm] = analyze(f, k, N)
+            if k not in avail: continue
+            cache[nm] = analyze(f, k, N)
     with open(CACHE_FILE, 'wb') as fp: pickle.dump(cache, fp)
 
-# ── Summary ──
-print("\n" + "="*60)
-print(f"  {'Method':<10s}  {'mean':>14s}  {'std':>14s}  {'median':>14s}")
-print("-"*60)
-for nm in METHODS.values():
-    if nm not in cache: continue
-    v = cache[nm]
-    print(f"  {nm:<10s}  {v.mean():>14.4e}  {v.std():>14.4e}  {np.median(v):>14.4e}")
-print("="*60 + "\n")
 
 # ── Phase 2: Plot ──
 order = [nm for nm in ('Ours', '3DRCAN') if nm in cache]
@@ -119,7 +108,7 @@ if   p < 1e-3: sig_text = '***'
 elif p < 1e-2: sig_text = '**'
 elif p < 5e-2: sig_text = '*'
 else:          sig_text = 'n.s.'
-print(f"  {order[0]} vs {order[1]}: W={stat:.1f}, p={p:.3e}  {sig_text}")
+
 
 y_max = df['Value'].max()
 y_bar = y_max * 1.05
@@ -139,5 +128,4 @@ sns.despine(ax=ax)
 
 os.makedirs('../outputs', exist_ok=True)
 plt.savefig(OUT_PDF, dpi=600, transparent=True)
-print(f"Saved: {OUT_PDF}")
-plt.close(fig); print("Done!")
+plt.close(fig)

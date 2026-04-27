@@ -41,13 +41,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Matching conditions to evaluate
 MATCH_CONDITIONS = [
-    # ('iou',      0.20),
-    # ('iou',      0.25),
+    ('iou',      0.20),
+    ('iou',      0.25),
     ('iou',      0.30),
-    # ('iou',      0.50),
-    # ('centroid',  3.0),
-    # ('centroid',  5.0),
-    # ('centroid', 10.0),
+    ('iou',      0.50),
+    ('centroid',  3.0),
+    ('centroid',  5.0),
+    ('centroid', 10.0),
 ]
 
 # Cellpose & evaluation parameters
@@ -61,8 +61,8 @@ NUM_THRES = 10                    # Min avg cell count to keep sample
 H5_PATH = '../../../../../../../../m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5'
 
 # Cache paths
-MASK_CACHE = 'f4pa_masks.h5'      # Cellpose masks (run once)
-METRICS_CACHE_DIR = 'f4pa_caches'  # Per-condition CSV caches
+MASK_CACHE = 'f4pa_new_masks.h5'      # Cellpose masks (run once)
+METRICS_CACHE_DIR = 'f4pa_new_caches'  # Per-condition CSV caches
 
 # Visualization parameters
 VIS_SLICE_IDX = 10
@@ -169,11 +169,10 @@ def compute_match_stats(pred_mask, gt_mask, mode='iou', threshold=0.5):
 # Rename methods for display
 METHOD_DISPLAY = {
     'LR (Interp)': 'Interpolation',
+    'RCAN_output': '3DRCAN',
+    'RLN_output': 'RLN',
     'SwinIR_output': 'SwinIR',
-    'SRCNN_output': 'SRCNN',
-    'CARE_output': 'CARE',
-    #'sit_output': 'Ours',
-    'sit_pretrain_output': 'Ours',
+    'sit_pretrain_output_adapted': 'Ours',
 }
 
 def rename_method(name):
@@ -189,8 +188,8 @@ def run_cellpose_and_cache(h5_path, mask_cache_path, diameter=30,
     Run cellpose on all methods ONCE. Save masks to H5.
     Returns: method_names, valid_indices, vis_data_dict, vis_sample_idx
     """
-    model = models.CellposeModel(gpu=True, pretrained_model='cyto2')
-    print(f"Phase 1: Running Cellpose (diameter={diameter})")
+    model = models.CellposeModel(gpu=True, pretrained_model='./cpsam')
+
 
     with h5py.File(h5_path, 'r') as f:
         ds_hr = f['hr']
@@ -244,20 +243,18 @@ def run_cellpose_and_cache(h5_path, mask_cache_path, diameter=30,
                         batch_data[k] = [data[z] for z in range(20)]
 
                 # --- Batch cellpose: group by parameter set ---
-                # Group 1 (default params): GT + LR + "sit" methods
-                # Group 2 (tuned params): SwinIR, SRCNN, CARE
                 default_imgs = []  # (method_name, slice_imgs)
-                tuned_imgs = []
+                tuned_imgs = [] # if need specific params for cellpose (not activated)
 
                 default_imgs.append(('Ground Truth', batch_data['Ground Truth']))
                 for method_name, imgs_list in batch_data.items():
                     if method_name == 'Ground Truth':
                         continue
                     # GT, LR, and SiT use default cellpose params
-                    if "sit" in method_name or "LR" in method_name:
-                        default_imgs.append((method_name, imgs_list))
-                    else:
-                        tuned_imgs.append((method_name, imgs_list))
+                    # if "sit" in method_name or "LR" in method_name:
+                    default_imgs.append((method_name, imgs_list))
+                    # else:
+                    #     tuned_imgs.append((method_name, imgs_list))
 
                 # Flatten into one big list per group
                 default_flat = []
@@ -332,8 +329,7 @@ def run_cellpose_and_cache(h5_path, mask_cache_path, diameter=30,
             mf.attrs['num_methods'] = len(all_method_keys)
             mf.attrs['vis_sample_idx'] = vis_sample_idx
 
-    print(f"Phase 1 done. Valid: {valid_flags.sum()}/{num_samples}. "
-          f"Cached to {mask_cache_path}")
+
     return vis_data_dict, vis_sample_idx
 
 
@@ -512,7 +508,7 @@ def add_significance(ax, data, metric='PQ', method_order=None,
     then significance is tested on the specified metric.
     """
     if method_order is None:
-        method_order = ['Interpolation', 'SwinIR', 'Ours']
+        method_order = ['Interpolation', '3DRCAN', 'Ours']
 
     # Find the best baseline by PQ (excluding Ours AND Interpolation)
     baselines = [m for m in method_order
@@ -576,7 +572,7 @@ def plot_main_panel(df_plot, vis_data, mask_cache_path,
         2, 4, subplot_spec=gs[0],
         height_ratios=[1, 1], hspace=0.08, wspace=0.05)
 
-    display_order = ['Interpolation', 'SwinIR', 'Ours', 'Ground Truth']
+    display_order = ['Interpolation', '3DRCAN', 'Ours', 'Ground Truth']
     method_key_map = {}
     for k in vis_data.keys():
         rn = rename_method(k)
@@ -624,10 +620,10 @@ def plot_main_panel(df_plot, vis_data, mask_cache_path,
 
     main_palette = {
         'Interpolation': '#7f7f7f',
-        'SwinIR': '#1f77b4',
+        '3DRCAN': '#1f77b4',
         'Ours': '#d62728'
     }
-    main_methods = ['Interpolation', 'SwinIR', 'Ours']
+    main_methods = ['Interpolation', '3DRCAN', 'Ours']
     df_m = df_plot[df_plot['Method'].isin(main_methods)]
 
     # PQ violin (top)
@@ -674,9 +670,8 @@ def plot_main_panel(df_plot, vis_data, mask_cache_path,
 
     plt.subplots_adjust(left=0.03, right=0.97, top=0.90, bottom=0.12)
     os.makedirs('../outputs', exist_ok=True)
-    out = '../outputs/Figure_4_Panel_a.pdf'
+    out = '../outputs/Figure_4_Panel_a_new.pdf'
     plt.savefig(out, dpi=600, transparent=True)
-    print(f"Saved: {out}")
     plt.close(fig)
 
 
@@ -687,12 +682,12 @@ def plot_supplementary(df_plot, condition_desc):
 
     sup_palette = {
         'Ours': '#E64B35',
-        'SwinIR': '#4DBBD5',
-        'CARE': '#8491B4',
-        'SRCNN': '#B0B9D1',
+        '3DRCAN': '#4DBBD5',
+        'RLN': '#8491B4',
+        'SwinIR': '#B0B9D1',
         'Interpolation': '#E1E5ED'
     }
-    sup_methods = ['Ours', 'SwinIR', 'CARE', 'SRCNN', 'Interpolation']
+    sup_methods = ['Ours', '3DRCAN', 'RLN', 'SwinIR', 'Interpolation']
     df_m = df_plot[df_plot['Method'].isin(sup_methods)]
 
     ax = fig.add_subplot(gs[0])
@@ -712,9 +707,8 @@ def plot_supplementary(df_plot, condition_desc):
 
     plt.subplots_adjust(left=0.12, right=0.95, top=0.92, bottom=0.12)
     os.makedirs('../outputs', exist_ok=True)
-    out = '../outputs/Sup_Fig_4.pdf'
+    out = '../outputs/Sup_Fig_4_new.pdf'
     plt.savefig(out, dpi=600, transparent=True)
-    print(f"Saved: {out}")
     plt.close(fig)
 
 
@@ -726,14 +720,17 @@ if __name__ == '__main__':
 
     # ── Parse CLI args ──
     parser = argparse.ArgumentParser(description='Figure 4 Panel A')
-    parser.add_argument('--vis-idx', type=int, default=6,
+    parser.add_argument('--vis-idx', type=int, default=429,
                         help='Sample index for visualization (default: 6)')
+    parser.add_argument('--vis-slice', type=int, default=8,
+                        help='Slice index (z) for visualization (default: 10)')
     args = parser.parse_args()
     VIS_SAMPLE_IDX = args.vis_idx
+    VIS_SLICE_IDX = args.vis_slice
 
     # ── Phase 1: Run cellpose once ──
     if os.path.exists(MASK_CACHE):
-        print(f"Mask cache found: {MASK_CACHE} — skipping cellpose.")
+
         # Still need vis_data for plotting
         with h5py.File(H5_PATH, 'r') as f:
             vis_idx = VIS_SAMPLE_IDX
@@ -769,52 +766,25 @@ if __name__ == '__main__':
         cache_path = os.path.join(METRICS_CACHE_DIR, f'{cond_key}.csv')
 
         if os.path.exists(cache_path):
-            print(f"Loading cached metrics: {cond_key}")
+
             df = pd.read_csv(cache_path)
         else:
-            print(f"Computing metrics: {cond_key}")
+
             df = compute_metrics_from_cache(MASK_CACHE, mode, thresh)
             df.to_csv(cache_path, index=False)
 
         df['Method'] = df['Method'].apply(rename_method)
         all_results[cond_key] = (mode, thresh, df)
 
-    # ── Phase 3: Print summary for all conditions ──
-    print("\n" + "=" * 80)
-    print("  METRICS SUMMARY ACROSS ALL MATCHING CONDITIONS")
-    print("=" * 80)
-
-    for cond_key, (mode, thresh, df) in all_results.items():
-        if mode == 'iou':
-            desc = f'IoU > {thresh}'
-        else:
-            desc = f'Centroid < {thresh} px'
-
-        df_methods = df[df['Method'] != 'Ground Truth']
-        summary = df_methods.groupby('Method')[
-            ['Precision', 'Recall', 'F1', 'Dice', 'PQ']].mean()
-
-        print(f"\n{'─' * 60}")
-        print(f"  {desc}")
-        print(f"{'─' * 60}")
-        print(summary.round(4).to_string())
-
-    print("\n" + "=" * 80)
-
-    # ── Select fixed condition: IoU > 0.3 ──
+    # ── Select fixed condition for plotting ──
     assert PLOT_CONDITION in all_results, \
         f"Condition '{PLOT_CONDITION}' not found. Available: {list(all_results.keys())}"
     plot_mode, plot_thresh, df_plot = all_results[PLOT_CONDITION]
     plot_desc = f'IoU > {plot_thresh}' if plot_mode == 'iou' \
         else f'Centroid < {plot_thresh} px'
 
-    ours_pq = df_plot[df_plot['Method'] == 'Ours']['PQ'].mean()
-    print(f"\n>>> PLOTTING with: {plot_desc} (Ours PQ = {ours_pq:.4f})")
-
-    # ── Phase 4: Plot ──
+    # ── Generate figures ──
     plot_main_panel(df_plot, vis_data, MASK_CACHE,
                     plot_mode, plot_thresh, plot_desc,
                     vis_sample_idx=VIS_SAMPLE_IDX)
     plot_supplementary(df_plot, plot_desc)
-
-    print("\nDone!")
