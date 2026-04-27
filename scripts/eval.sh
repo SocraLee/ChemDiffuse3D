@@ -18,7 +18,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --results-key chemdiffuse3d_output
 
 # ==========================================
-# Evaluation with RCAN post-diffusion decoder
+# Evaluation with Adapted post-diffusion decoder
 # ==========================================
 # CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
 #     --task_configs_json "./configs/3dsr4z_config.json" \
@@ -26,13 +26,13 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
 #     --conditioning_args_json "./configs/encoder_config.json" \
 #     --ckpt_dir "./outputs/3dsr4z_experiment/checkpoints" \
 #     --resume-steps 40000 \
-#     --exp-name "3dsr4z_eval_rcan" \
+#     --exp-name "3dsr4z_eval_adapted" \
 #     --save-results \
 #     --batch-size 4 \
 #     --num-steps 50 \
-#     --decoder-type rcan \
-#     --decoder-path "./outputs/decoder/rcan/3d_sr/best_decoder.pth" \
-#     --results-key chemdiffuse3d_output_rcan
+#     --decoder-type adapted \
+#     --decoder-path "./outputs/decoder/adapted/3d_sr/best_decoder.pth" \
+#     --results-key chemdiffuse3d_output_adapted
 
 # ==========================================
 # Evaluation with Fused decoder

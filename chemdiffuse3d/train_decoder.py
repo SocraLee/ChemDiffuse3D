@@ -1,14 +1,14 @@
 """
 ChemDiffuse3D Decoder Training Script.
 
-Trains post-diffusion decoders (RCAN or Fused) that take VAE latents
+Trains the post-diffusion adapted decoder that takes VAE latents
 and LR volumes as input to produce high-resolution output images.
 
 Usage:
     python train_decoder.py \
         --task_configs_json ./configs/3dsr4z_config.json \
-        --exp-name denoise_rcan \
-        --decoder-type rcan \
+        --exp-name denoise_adapted \
+        --decoder-type adapted \
         --save-dir ./outputs/decoder \
         --batch-size 4 \
         --epochs 50
@@ -26,7 +26,7 @@ import wandb
 from tqdm import tqdm
 
 from data.dataset import H5Dataset
-from model.decoder import PureRCANDecoder, FusedDecoder
+from model.decoder import AdaptedDecoder
 
 
 class CharbonnierLoss(nn.Module):
@@ -87,10 +87,8 @@ def main(args):
 
         # Model
         print(f"Initializing {args.decoder_type} decoder...")
-        if args.decoder_type == 'rcan':
-            model = PureRCANDecoder().to(device)
-        elif args.decoder_type == 'fused':
-            model = FusedDecoder().to(device)
+        if args.decoder_type == 'adapted':
+            model = AdaptedDecoder().to(device)
         else:
             raise ValueError(f"Unknown decoder type: {args.decoder_type}")
 
@@ -223,7 +221,7 @@ if __name__ == "__main__":
     parser.add_argument("--task_configs_json", type=str, required=True)
     parser.add_argument("--project-name", type=str, default="ChemDiffuse3D_Decoder")
     parser.add_argument("--exp-name", type=str, required=True)
-    parser.add_argument("--decoder-type", type=str, choices=['rcan', 'fused'], default='rcan')
+    parser.add_argument("--decoder-type", type=str, choices=['adapted'], default='adapted')
     parser.add_argument("--save-dir", type=str, required=True, help="Base directory to save decoder checkpoints")
     parser.add_argument("--report-to", type=str, default="wandb", choices=["wandb", "none"])
 

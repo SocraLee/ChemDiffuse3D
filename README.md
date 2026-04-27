@@ -17,7 +17,7 @@ ChemDiffuse3D is a conditional diffusion model for volumetric (3D) microscopy im
 ChemDiffuse3D combines:
 1. **SiT-3D Backbone** — A 3D Diffusion Transformer (Scalable Interpolant Transformer) with Anisotropic Lateral-Axial Attention for efficient processing of volumetric data
 2. **3D UNet Conditioning Module** — Encodes low-resolution input volumes into dense conditioning signals
-3. **Post-Diffusion Decoders** — RCAN and Fused decoder variants for pixel-space refinement
+3. **Post-Diffusion Decoders** — Adapted and Fused decoder variants for pixel-space refinement
 4. **REPA Alignment (optional)** — REPresentation Alignment loss using DINOv2 features for improved generation quality. This technique is not used in the paper, but in our initial experiments, it accelerates the convergence speed.
 
 ## Installation
@@ -145,10 +145,10 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
 Train and apply a post-diffusion decoder for enhanced pixel-space refinement:
 
 ```bash
-# Train an RCAN decoder
+# Train an adapted decoder
 python chemdiffuse3d/train_decoder.py \
     --task_configs_json configs/3dsr4z_config.json \
-    --exp-name 3dsr4z_rcan \
+    --exp-name 3dsr4z_adapted \
     --save-dir ./outputs/decoder
 
 # Evaluate with the trained decoder
@@ -158,9 +158,9 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --conditioning_args_json ./configs/encoder_config.json \
     --ckpt_dir ./outputs/<exp_name>/checkpoints \
     --resume-steps <step> \
-    --exp-name eval_rcan \
-    --decoder-type rcan \
-    --decoder-path ./outputs/decoder/rcan/3d_sr/best_decoder.pth
+    --exp-name eval_adapted \
+    --decoder-type adapted \
+    --decoder-path ./outputs/decoder/adapted/3d_sr/best_decoder.pth
 ```
 
 See `scripts/eval.sh` and `scripts/train_decoder.sh` for additional examples.
@@ -182,7 +182,7 @@ ChemDiffuse3D integrates the following components:
 
 1. **SiT-3D Backbone** — A 3D Diffusion Transformer (Scalable Interpolant Transformer) with Anisotropic Lateral-Axial Attention for efficient processing of volumetric data
 2. **3D UNet Conditioning Module** — Encodes low-resolution input volumes into dense conditioning signals for the diffusion backbone
-3. **Post-Diffusion Decoders** — RCAN and Fused decoder variants for pixel-space refinement from VAE latent space
+3. **Post-Diffusion Decoders** — Adapted and Fused decoder variants for pixel-space refinement from VAE latent space
 4. **REPA Alignment (optional)** — REPresentation Alignment loss using DINOv2 features for improved generation quality. This technique is not used in the paper, but in our initial experiments it accelerates the convergence speed.
 
 ---
@@ -222,7 +222,7 @@ ChemDiffuse3D/
 │   │   ├── sit_backbone.py      # SiT-3D backbone with factorized attention
 │   │   ├── attention.py         # Anisotropic lateral-axial attention
 │   │   ├── unet3d.py            # LR conditioning encoder-decoder
-│   │   ├── decoder.py           # RCAN & Fused post-diffusion decoders
+│   │   ├── decoder.py           # Adapted & Fused post-diffusion decoders
 │   │   ├── utils.py             # Positional embeddings
 │   │   └── rope.py              # Rotary position embeddings
 │   └── data/

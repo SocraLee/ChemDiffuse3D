@@ -6,7 +6,7 @@ computing PSNR and SSIM metrics. Supports optional post-diffusion
 decoder refinement (Adapted decoder, Finetuned VAE decoder).
 
 Usage:
-    CUDA_VISIBLE_DEVICES=0 python inference.py \
+    CUDA_VISIBLE_DEVICES=0 python generate.py \
         --task_configs_json ./configs/3dsr4z_config.json \
         --backbone_args_json ./configs/backbone_config.json \
         --conditioning_args_json ./configs/encoder_config.json \
@@ -50,11 +50,13 @@ logging.basicConfig(level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 
+
 def get_test_path(train_path):
     """Derive test path from training path."""
     if "/train/" in train_path:
         return train_path.replace("/train/", "/test/")
     return train_path.replace("train", "test")
+
 
 def get_val_path(train_path):
     """Derive validation path from training path."""
@@ -62,7 +64,11 @@ def get_val_path(train_path):
         return train_path.replace("/train/", "/val/")
     return train_path.replace("train", "val")
 
-def generate_and_decode(model, latents_noise, cond_input, latents_scale, latents_bias,
+
+
+
+
+def generate_and_decode(model, vae, latents_noise, cond_input, latents_scale, latents_bias,
                         args, lr_image=None, decoder=None):
     """Generate latent samples and decode to image space."""
     samples = euler_maruyama_sampler(
@@ -89,7 +95,7 @@ def generate_and_decode(model, latents_noise, cond_input, latents_scale, latents
         # Use VAE decoder (pretrained or finetuned)
         B, D, C, H, W = samples.shape
         samples = samples.reshape(B * D, C, H, W)
-        samples = decoder.decode((samples - latents_bias) / latents_scale).sample
+        samples = vae.decode((samples - latents_bias) / latents_scale).sample
         samples = (samples + 1) / 2.
         return samples.clamp(0, 1)
 
@@ -130,6 +136,7 @@ def run_evaluation(args):
     model.eval()
 
     # Load VAE
+    vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-ema").to(device)
     latents_scale = torch.tensor([0.18215] * 4).view(1, 4, 1, 1).to(device)
     latents_bias = torch.tensor([0.] * 4).view(1, 4, 1, 1).to(device)
 
@@ -144,16 +151,14 @@ def run_evaluation(args):
         else:
             logger.warning(f"Adapted decoder path not found: {args.decoder_path}. Using random initialization.")
         decoder.eval()
-    else:
-        vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-ema").to(device)
-        if args.decoder_type == 'finetuned_vae':
-            if args.decoder_path and os.path.exists(args.decoder_path):
-                state_dict = torch.load(args.decoder_path, map_location=device, weights_only=True)
-                vae.decoder.load_state_dict(state_dict)
-                logger.info(f"Loaded finetuned VAE decoder from {args.decoder_path}")
-            else:
-                logger.warning(f"VAE decoder path not found: {args.decoder_path}. Using pretrained VAE decoder.")
-        decoder = vae
+    elif args.decoder_type == 'finetuned_vae':
+        if args.decoder_path and os.path.exists(args.decoder_path):
+            state_dict = torch.load(args.decoder_path, map_location=device, weights_only=True)
+            vae.decoder.load_state_dict(state_dict)
+            logger.info(f"Loaded finetuned VAE decoder from {args.decoder_path}")
+        else:
+            logger.warning(f"VAE decoder path not found: {args.decoder_path}. Using pretrained VAE decoder.")
+
     # Metrics
     psnr_metric = PeakSignalNoiseRatio(data_range=1.0, dim=(1, 2, 3)).to(device)
     ssim_metric = StructuralSimilarityIndexMeasure(data_range=1.0).to(device)
@@ -195,7 +200,7 @@ def run_evaluation(args):
                 cond_input = (dino_lr, lr_image, task_id)
 
                 pred = generate_and_decode(
-                    model, latents_noise, cond_input,
+                    model, vae, latents_noise, cond_input,
                     latents_scale, latents_bias, args,
                     lr_image=lr_image, decoder=decoder
                 )
