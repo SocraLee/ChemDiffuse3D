@@ -1,0 +1,12 @@
+{
+    "hidden_size": 1024,
+    "model_depth": 24,
+    "patch_size": 2,
+    "in_channels": 4,
+    "num_heads": 16,
+    "mlp_ratio": 4.0,
+    "lr_embedding_dim": 256,
+    "condition_dim": 1024,
+    "encoder_depth": 8,
+    "dino_feat_dim": 1024
+}

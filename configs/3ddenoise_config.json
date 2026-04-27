@@ -1,0 +1,12 @@
+{
+    "task_3ddenoise": {
+        "train_data_dir": "<YOUR_DATA_PATH>/3ddenoise_data/train/data.h5",
+        "dev_data_dir": "<YOUR_DATA_PATH>/3ddenoise_data/val/data.h5",
+        "decoder_folder": "3ddenoise",
+        "sampling_weight": 100,
+        "train_batch_size": 2,
+        "eval_batch_size": 2,
+        "input_depth": 20,
+        "output_depth": 20
+    }
+}

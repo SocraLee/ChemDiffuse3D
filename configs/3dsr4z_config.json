@@ -1,0 +1,12 @@
+{
+    "task_3dsr4z": {
+        "train_data_dir": "<YOUR_DATA_PATH>/3dsrnew_data/train/data_d4.h5",
+        "dev_data_dir": "<YOUR_DATA_PATH>/3dsrnew_data/val/data_d4.h5",
+        "decoder_folder": "3d_sr",
+        "sampling_weight": 100,
+        "train_batch_size": 4,
+        "eval_batch_size": 2,
+        "input_depth": 5,
+        "output_depth": 20
+    }
+}

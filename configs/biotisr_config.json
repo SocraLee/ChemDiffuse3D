@@ -1,0 +1,12 @@
+{
+    "task_biotisr": {
+        "train_data_dir": "<YOUR_DATA_PATH>/biotisr_data/train/data_spatial.h5",
+        "dev_data_dir": "<YOUR_DATA_PATH>/biotisr_data/val/data_spatial.h5",
+        "decoder_folder": "biotisr",
+        "sampling_weight": 100,
+        "train_batch_size": 4,
+        "eval_batch_size": 2,
+        "input_depth": 20,
+        "output_depth": 20
+    }
+}

@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files
+*.h5
+*.hdf5
+*.pkl
+*.csv
+*.tiff
+*.tif
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# WandB
+wandb/
+
+# Outputs
+outputs/
+figures/output/

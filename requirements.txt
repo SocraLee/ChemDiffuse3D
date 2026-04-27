@@ -1,0 +1,14 @@
+torch>=2.0
+torchvision
+diffusers>=0.25.0
+accelerate>=0.25.0
+wandb
+h5py
+numpy
+scipy
+tqdm
+timm
+torch-ema
+torchmetrics
+transformers
+xformers

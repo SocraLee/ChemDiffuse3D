@@ -1,0 +1,10 @@
+{
+    "lr_encoder_params": {
+        "input_depth": 20,
+        "output_depth": 20,
+        "out_embed_dim": 1024,
+        "out_concat_dim": 256,
+        "target_token_num": 5120,
+        "dropout_p": 0.0
+    }
+}

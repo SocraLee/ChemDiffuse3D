@@ -1,0 +1,32 @@
+{
+    "task_3dsr4z": {
+        "train_data_dir": "<YOUR_DATA_PATH>/3dsrnew_data/train/data_d4.h5",
+        "dev_data_dir": "<YOUR_DATA_PATH>/3dsrnew_data/val/data_d4.h5",
+        "train_batch_size": 2,
+        "eval_batch_size": 2,
+        "sampling_weight": 50,
+        "lr_encoder_params": {
+            "input_depth": 5,
+            "output_depth": 20,
+            "out_embed_dim": 1024,
+            "out_concat_dim": 256,
+            "target_token_num": 5120,
+            "dropout_p": 0.0
+        }
+    },
+    "task_3ddenoise": {
+        "train_data_dir": "<YOUR_DATA_PATH>/3ddenoise_data/train/data.h5",
+        "dev_data_dir": "<YOUR_DATA_PATH>/3ddenoise_data/val/data.h5",
+        "train_batch_size": 2,
+        "eval_batch_size": 2,
+        "sampling_weight": 50,
+        "lr_encoder_params": {
+            "input_depth": 20,
+            "output_depth": 20,
+            "out_embed_dim": 1024,
+            "out_concat_dim": 256,
+            "target_token_num": 5120,
+            "dropout_p": 0.0
+        }
+    }
+}
