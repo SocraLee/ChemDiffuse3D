@@ -31,7 +31,7 @@ Thumbs.db
 *.csv
 *.tiff
 *.tif
-.nfs000000000019e4d100000a0e
+
 # Model checkpoints
 *.pt
 *.pth

@@ -16,21 +16,6 @@ python chemdiffuse3d/train_decoder.py \
     --val-freq 2 \
     --num-workers 8
 
-# ==========================================
-# Fused Decoder for 3D Super-Resolution
-# ==========================================
-# python chemdiffuse3d/train_decoder.py \
-#     --task_configs_json configs/3dsr4z_config.json \
-#     --project-name ChemDiffuse3D_Decoder \
-#     --exp-name 3dsr4z_fused \
-#     --decoder-type fused \
-#     --save-dir ./outputs/decoder \
-#     --batch-size 2 \
-#     --lr 2e-4 \
-#     --epochs 50 \
-#     --val-freq 2 \
-#     --num-workers 8 \
-#     --grad-accum-steps 4
 
 # ==========================================
 # Adapted Decoder for 3D Denoising
