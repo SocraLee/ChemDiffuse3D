@@ -24,14 +24,6 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Data files
-*.h5
-*.hdf5
-*.pkl
-*.csv
-*.tiff
-*.tif
-
 # Model checkpoints
 *.pt
 *.pth
