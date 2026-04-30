@@ -8,8 +8,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --task_configs_json "./configs/3dsr4z_config.json" \
     --backbone_args_json "./configs/backbone_config.json" \
     --conditioning_args_json "./configs/encoder_config.json" \
-    --ckpt_dir "./outputs/3dsr4z_experiment/checkpoints" \
-    --resume-steps 40000 \
+    --ckpt_path "./outputs/3dsr4z_experiment/checkpoints/acc_step_0040000/model.pt" \
     --exp-name "3dsr4z_eval_adapted" \
     --save-results \
     --batch-size 4 \
@@ -26,8 +25,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --task_configs_json "./configs/3dsr4z_config.json" \
     --backbone_args_json "./configs/backbone_config.json" \
     --conditioning_args_json "./configs/encoder_config.json" \
-    --ckpt_dir "./outputs/3dsr4z_experiment/checkpoints" \
-    --resume-steps 40000 \
+    --ckpt_path "./outputs/3dsr4z_experiment/checkpoints/acc_step_0040000/model.pt" \
     --exp-name "3dsr4z_eval_40k" \
     --save-results \
     --batch-size 4 \

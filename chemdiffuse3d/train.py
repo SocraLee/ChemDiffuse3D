@@ -321,22 +321,9 @@ def main(args):
     else:
         if args.pretrain_ckpt is not None:
             state_dict = torch.load(args.pretrain_ckpt, map_location="cpu", weights_only=True)
-            # strict=False: legacy ckpts always contain both upsampler and matched-depth
-            # decoder subtrees; the new model may build only one of them. Any unexpected
-            # key must come from those two skipped subtrees, and missing keys must be empty.
-            missing, unexpected = model.load_state_dict(state_dict, strict=False)
-            allowed_unexpected_prefixes = (
-                "lr_condition_modules.decoder.upsampler.",
-                "lr_condition_modules.decoder.decoder.",
-            )
-            bad_unexpected = [k for k in unexpected if not k.startswith(allowed_unexpected_prefixes)]
-            if missing or bad_unexpected:
-                raise RuntimeError(
-                    f"pretrain_ckpt load mismatch.\n  missing={missing}\n  unexpected (unaccounted)={bad_unexpected}"
-                )
+            model.load_state_dict(state_dict, strict=False)
             if accelerator.is_main_process:
-                logger.info(f"Initialized model weights from {args.pretrain_ckpt} "
-                            f"(skipped {len(unexpected)} keys from unbuilt cond-decoder subtrees)")
+                logger.info(f"Initialized model weights from {args.pretrain_ckpt}")
         model, optimizer = accelerator.prepare(model, optimizer)
         ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
         ema.to(device)
@@ -371,112 +358,108 @@ def main(args):
     latents_scale = torch.tensor([0.18215, 0.18215, 0.18215, 0.18215]).view(1, 4, 1, 1).to(accelerator.device)
     latents_bias = torch.tensor([0., 0., 0., 0.]).view(1, 4, 1, 1).to(accelerator.device)
 
-    for epoch in range(args.epochs):
-        model.train()
-        for task_id, batch in train_dataloader:
-            hr_image, dino_lr_y, vae_hr_x, hr_embeddings, lr = batch
-            vae_hr_x = sample_posterior(vae_hr_x, latents_scale=latents_scale, latents_bias=latents_bias)
-            zs = {z_type: hr_embeddings[z_type] for z_type in common_z_types}
+    model.train()
+    for task_id, batch in train_dataloader:
+        hr_image, dino_lr_y, vae_hr_x, hr_embeddings, lr = batch
+        vae_hr_x = sample_posterior(vae_hr_x, latents_scale=latents_scale, latents_bias=latents_bias)
+        zs = {z_type: hr_embeddings[z_type] for z_type in common_z_types}
 
-            with accelerator.accumulate(model):
-                feature_alignment = (args.proj_coeff != 0)
-                model_kwargs = dict(
-                    y=dino_lr_y,
-                    lr_image=lr,
-                    feature_alignment=feature_alignment
-                )
-                loss, proj_loss = loss_fn(model, vae_hr_x, model_kwargs, zs=zs)
+        with accelerator.accumulate(model):
+            feature_alignment = (args.proj_coeff != 0)
+            model_kwargs = dict(
+                y=dino_lr_y,
+                lr_image=lr,
+                feature_alignment=feature_alignment
+            )
+            loss, proj_loss = loss_fn(model, vae_hr_x, model_kwargs, zs=zs)
 
-                loss_mean = loss.mean()
-                proj_loss_mean = proj_loss.mean()
+            loss_mean = loss.mean()
+            proj_loss_mean = proj_loss.mean()
 
-                loss = loss_mean + proj_loss_mean * args.proj_coeff
+            loss = loss_mean + proj_loss_mean * args.proj_coeff
 
-                accelerator.backward(loss)
-                if accelerator.sync_gradients:
-                    params_to_clip = model.parameters()
-                    grad_norm = accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)
-                    if isinstance(grad_norm, torch.Tensor):
-                        grad_norm = grad_norm.detach()
-
-                optimizer.step()
-                optimizer.zero_grad(set_to_none=True)
-
-                if accelerator.sync_gradients:
-                    ema.update()
-
-            # Logging and saving
+            accelerator.backward(loss)
             if accelerator.sync_gradients:
-                progress_bar.update(1)
-                global_step += 1
-                loss_mean_detached = loss_mean.detach()
-                proj_loss_mean_detached = proj_loss_mean.detach()
-                logs = {
-                    "train/loss": accelerator.gather(loss_mean_detached).mean().item(),
-                    "train/proj_loss": accelerator.gather(proj_loss_mean_detached).mean().item(),
-                    "train/grad_norm": accelerator.gather(grad_norm).mean().item(),
-                    "epoch": epoch
-                }
-                accelerator.log(logs, step=global_step)
+                params_to_clip = model.parameters()
+                grad_norm = accelerator.clip_grad_norm_(params_to_clip, args.max_grad_norm)
+                if isinstance(grad_norm, torch.Tensor):
+                    grad_norm = grad_norm.detach()
 
-                # Checkpoint
-                if global_step % args.checkpointing_steps == 0 and global_step > 0:
-                    accelerator.wait_for_everyone()
-                    if accelerator.is_main_process:
-                        save_path = f"{checkpoint_dir}/acc_step_{global_step:07d}"
-                        accelerator.save_state(save_path)
-                        ema.to("cpu")
-                        torch.save(ema.state_dict(), f"{save_path}/ema.pt")
-                        with ema.average_parameters():
-                            torch.save(
-                                {k: v.cpu() for k, v in model.module.state_dict().items()}
-                                if hasattr(model, 'module')
-                                else {k: v.cpu() for k, v in model.state_dict().items()},
-                                f"{save_path}/ema_named.pt"
-                            )
-                        ema.to(device)
-                        logger.info(f"Saved state to {save_path}")
+            optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
 
-                # Test run at step 5
-                if global_step == 5:
-                    if accelerator.is_main_process:
-                        tqdm.write("Test run of evaluation...")
-                    for eval_task_id, dev_loader in slice_loader_dict.items():
-                        eval_psnr, eval_ssim, vis_samples, gt_samples = evaluate_model(
-                            model, ema, vae, dev_loader, eval_task_id, args, accelerator
+            if accelerator.sync_gradients:
+                ema.update()
+
+        # Logging and saving
+        if accelerator.sync_gradients:
+            progress_bar.update(1)
+            global_step += 1
+            loss_mean_detached = loss_mean.detach()
+            proj_loss_mean_detached = proj_loss_mean.detach()
+            logs = {
+                "train/loss": accelerator.gather(loss_mean_detached).mean().item(),
+                "train/proj_loss": accelerator.gather(proj_loss_mean_detached).mean().item(),
+                "train/grad_norm": accelerator.gather(grad_norm).mean().item(),
+            }
+            accelerator.log(logs, step=global_step)
+
+            # Checkpoint
+            if global_step % args.checkpointing_steps == 0 and global_step > 0:
+                accelerator.wait_for_everyone()
+                if accelerator.is_main_process:
+                    save_path = f"{checkpoint_dir}/acc_step_{global_step:07d}"
+                    accelerator.save_state(save_path)
+                    ema.to("cpu")
+                    torch.save(ema.state_dict(), f"{save_path}/ema.pt")
+                    with ema.average_parameters():
+                        torch.save(
+                            {k: v.cpu() for k, v in model.module.state_dict().items()}
+                            if hasattr(model, 'module')
+                            else {k: v.cpu() for k, v in model.state_dict().items()},
+                            f"{save_path}/model.pt"
                         )
-                        del eval_psnr, eval_ssim, vis_samples, gt_samples
+                    ema.to(device)
+                    logger.info(f"Saved state to {save_path}")
 
-                # Periodic evaluation
-                if (global_step % args.sampling_steps == 0 and global_step > 0):
+            # Test run at step 5
+            if global_step == 5:
+                if accelerator.is_main_process:
+                    tqdm.write("Test run of evaluation...")
+                for eval_task_id, dev_loader in slice_loader_dict.items():
+                    eval_psnr, eval_ssim, vis_samples, gt_samples = evaluate_model(
+                        model, ema, vae, dev_loader, eval_task_id, args, accelerator
+                    )
+                    del eval_psnr, eval_ssim, vis_samples, gt_samples
+
+            # Periodic evaluation
+            if (global_step % args.sampling_steps == 0 and global_step > 0):
+                if accelerator.is_main_process:
+                    logger.info("Running evaluation...")
+                model.eval()
+                all_eval_metrics = {}
+
+                for eval_task_id, dev_loader in dev_dataloaders_dict.items():
+                    eval_psnr, eval_ssim, vis_samples, gt_samples = evaluate_model(
+                        model, ema, vae, dev_loader, eval_task_id, args, accelerator
+                    )
+
                     if accelerator.is_main_process:
-                        logger.info("Running evaluation...")
-                    model.eval()
-                    all_eval_metrics = {}
+                        all_eval_metrics[f"eval/{eval_task_id}/psnr"] = eval_psnr
+                        all_eval_metrics[f"eval/{eval_task_id}/ssim"] = eval_ssim
+                        if eval_task_id == list(dev_dataloaders_dict.keys())[0]:
+                            all_eval_metrics["samples"] = wandb.Image(array2grid(vis_samples))
+                            all_eval_metrics["gt_samples"] = wandb.Image(array2grid(gt_samples))
 
-                    for eval_task_id, dev_loader in dev_dataloaders_dict.items():
-                        eval_psnr, eval_ssim, vis_samples, gt_samples = evaluate_model(
-                            model, ema, vae, dev_loader, eval_task_id, args, accelerator
-                        )
+                if accelerator.is_main_process:
+                    accelerator.log(all_eval_metrics, step=global_step)
 
-                        if accelerator.is_main_process:
-                            all_eval_metrics[f"eval/{eval_task_id}/psnr"] = eval_psnr
-                            all_eval_metrics[f"eval/{eval_task_id}/ssim"] = eval_ssim
-                            if eval_task_id == list(dev_dataloaders_dict.keys())[0]:
-                                all_eval_metrics["samples"] = wandb.Image(array2grid(vis_samples))
-                                all_eval_metrics["gt_samples"] = wandb.Image(array2grid(gt_samples))
+                model.train()
 
-                    if accelerator.is_main_process:
-                        accelerator.log(all_eval_metrics, step=global_step)
+        gc.collect()
+        del batch, hr_image, dino_lr_y, vae_hr_x, hr_embeddings, lr
+        del proj_loss, loss
 
-                    model.train()
-
-            gc.collect()
-            del batch, hr_image, dino_lr_y, vae_hr_x, hr_embeddings, lr
-            del proj_loss, loss
-
-            if global_step >= args.max_train_steps:
-                break
         if global_step >= args.max_train_steps:
             break
 
@@ -514,7 +497,6 @@ def parse_args(input_args=None):
 
     # Model & Training
     parser.add_argument("--resolution", type=int, default=256)
-    parser.add_argument("--epochs", type=int, default=9999)
     parser.add_argument("--max-train-steps", type=int, default=400000)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=1)
 
@@ -538,10 +520,10 @@ def parse_args(input_args=None):
     parser.add_argument("--cfg-prob", type=float, default=0.)
     parser.add_argument("--cfg-scale", type=float, default=1.0)
     parser.add_argument("--project-name", type=str, default='ChemDiffuse3D')
-    parser.add_argument("--proj-coeff", type=float, default=0)
     parser.add_argument("--weighting", default="uniform", type=str)
 
     # REPA (optional)
+    parser.add_argument("--proj-coeff", type=float, default=0)
     parser.add_argument('--z-types', nargs='+', default=[])
     parser.add_argument('--z-weights', nargs='+', type=float, default=[])
 

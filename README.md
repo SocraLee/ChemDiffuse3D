@@ -63,8 +63,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
-    --ckpt_dir <PATH_TO_PRETRAINED_CHECKPOINT> \
-    --resume-steps 400000 \
+    --ckpt_path <PATH_TO_MODEL_PT> \
     --exp-name demo_eval
 ```
 
@@ -135,8 +134,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
-    --ckpt_dir ./outputs/<exp_name>/checkpoints \
-    --resume-steps <step> \
+    --ckpt_path ./outputs/<exp_name>/checkpoints/acc_step_<step>/model.pt \
     --exp-name <exp_name>
 ```
 
@@ -156,8 +154,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
-    --ckpt_dir ./outputs/<exp_name>/checkpoints \
-    --resume-steps <step> \
+    --ckpt_path ./outputs/<exp_name>/checkpoints/acc_step_<step>/model.pt \
     --exp-name eval_adapted \
     --decoder-type adapted \
     --decoder-path ./outputs/decoder/adapted/3d_sr/best_decoder.pth

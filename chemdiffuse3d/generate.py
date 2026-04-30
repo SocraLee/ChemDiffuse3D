@@ -6,12 +6,11 @@ computing PSNR and SSIM metrics. Supports optional post-diffusion
 decoder refinement (Adapted decoder, Finetuned VAE decoder).
 
 Usage:
-    CUDA_VISIBLE_DEVICES=0 python inference.py \
+    CUDA_VISIBLE_DEVICES=0 python generate.py \
         --task_configs_json ./configs/3dsr4z_config.json \
         --backbone_args_json ./configs/backbone_config.json \
         --conditioning_args_json ./configs/encoder_config.json \
-        --ckpt_dir checkpoints/my_experiment \
-        --resume-steps 40000 \
+        --ckpt_path /path/to/model.pt \
         --exp-name eval_40k \
         --save-results \
         --batch-size 4 \
@@ -123,8 +122,7 @@ def run_evaluation(args):
     logger.info(f"Model Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     # Load checkpoint
-    ckpt_path = os.path.join(args.ckpt_dir, f"acc_step_{args.resume_steps:07d}", "ema_named.pt")
-    state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+    state_dict = torch.load(args.ckpt_path, map_location="cpu", weights_only=True)
     # strict=False: legacy ckpts always contain both upsampler and matched-depth
     # decoder subtrees; this model may build only one of them.
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
@@ -137,7 +135,7 @@ def run_evaluation(args):
         raise RuntimeError(
             f"checkpoint load mismatch.\n  missing={missing}\n  unexpected (unaccounted)={bad_unexpected}"
         )
-    logger.info(f"Loaded checkpoint from {ckpt_path} "
+    logger.info(f"Loaded checkpoint from {args.ckpt_path} "
                 f"(skipped {len(unexpected)} keys from unbuilt cond-decoder subtrees)")
 
     model.eval()
@@ -251,9 +249,8 @@ def main():
     parser.add_argument("--conditioning_args_json", type=str, required=True)
 
     # Checkpoint
-    parser.add_argument("--ckpt_dir", type=str, required=True,
-                        help="Directory containing checkpoints (e.g., outputs/my_exp/checkpoints)")
-    parser.add_argument("--resume-steps", type=int, required=True)
+    parser.add_argument("--ckpt_path", type=str, required=True,
+                        help="Path to a model state_dict (.pt) to load into JointModel.")
 
     # Sampling
     parser.add_argument("--num-steps", type=int, default=50, help="Number of diffusion sampling steps")
