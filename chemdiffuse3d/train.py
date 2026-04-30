@@ -296,8 +296,6 @@ def main(args):
         prepared_train_loaders[task_id] = accelerator.prepare(loader)
     train_dataloader = MultiTaskDataLoader(prepared_train_loaders, sampling_weights=sampling_weights)
 
-    model, optimizer = accelerator.prepare(model, optimizer)
-
     prepared_dev_loaders = {}
     for task_id, loader in dev_dataloaders_dict.items():
         prepared_dev_loaders[task_id] = accelerator.prepare(loader)
@@ -316,16 +314,24 @@ def main(args):
         global_step = args.resume_step
         if accelerator.is_main_process:
             logger.info(f"Resumed from checkpoint: {ckpt_path}")
-
-    ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
-    ema.to(device)
-
-    if args.resume_step == 0 and args.ema_file is not None:
-        ema_path = f"{args.output_dir}/ema/{args.ema_file}"
-        ema.load_state_dict(torch.load(ema_path, map_location="cpu", weights_only=True))
-        ema.copy_to(model.parameters())
         ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
-
+        ema.to(device)
+    else:
+        assert not (args.pretrain_ema_ckpt and args.pretrain_ckpt)
+        ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
+        ema.to(device)
+        if args.pretrain_ckpt is not None:
+            state_dict = torch.load(args.pretrain_ckpt, map_location="cpu", weights_only=True)
+            model.load_state_dict(state_dict)
+            if accelerator.is_main_process:
+                logger.info(f"Initialized model weights from {args.pretrain_ckpt}")
+        if args.pretrain_ema_ckpt is not None:
+            ema_path = f"{args.output_dir}/ema/{args.pretrain_ema_ckpt}"
+            ema.load_state_dict(torch.load(ema_path, map_location="cpu", weights_only=True))
+            ema.copy_to(model.parameters())
+            ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
+    model, optimizer = accelerator.prepare(model, optimizer)
+        
     if args.resume_step > 0:
         ema_path = f"{save_dir}/checkpoints/acc_step_{args.resume_step:07d}/ema.pt"
         if os.path.exists(ema_path):
@@ -479,10 +485,17 @@ def parse_args(input_args=None):
     parser.add_argument("--exp-name", type=str, required=True)
     parser.add_argument("--logging-dir", type=str, default="logs")
     parser.add_argument("--report-to", type=str, default="wandb")
-    parser.add_argument("--sampling-steps", type=int, default=10000)
-    parser.add_argument("--checkpointing-steps", type=int, default=10000)
-    parser.add_argument("--resume-step", type=int, default=0)
-    parser.add_argument("--ema_file", type=str, default=None)
+
+    parser.add_argument("--sampling-steps", type=int, default=10000,
+                        help="Steps interval for evaluation.")
+    parser.add_argument("--checkpointing-steps", type=int, default=10000,
+                        help="Steps interval for checkpointing.")
+    parser.add_argument("--resume-step", type=int, default=0,
+                        help="Step to resume training from.")
+    parser.add_argument("--pretrain_ema_ckpt", type=str, default=None,
+                        help="Path to an EMA state_dict (.pt).")
+    parser.add_argument("--pretrain_ckpt", type=str, default=None,
+                        help="Path to a plain model state_dict (.pt).")
 
     # Config Files
     parser.add_argument("--backbone_args_json", type=str, required=True,
@@ -521,9 +534,9 @@ def parse_args(input_args=None):
     parser.add_argument("--proj-coeff", type=float, default=0)
     parser.add_argument("--weighting", default="uniform", type=str)
 
-    # REPA
+    # REPA (optional)
     parser.add_argument('--z-types', nargs='+', default=[])
-    parser.add_argument('--z-weights', nargs='+', type=float, default=[0.15, 0.8, 0.05])
+    parser.add_argument('--z-weights', nargs='+', type=float, default=[])
 
     if input_args is not None:
         args = parser.parse_args(input_args)
