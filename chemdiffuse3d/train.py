@@ -185,7 +185,8 @@ def main(args):
     model = JointModel(
         backbone_args=backbone_args,
         conditioning_args=conditioning_args,
-        common_z_types=common_z_types
+        common_z_types=common_z_types,
+        task_configs=task_configs,
     )
 
     vae = AutoencoderKL.from_pretrained("stabilityai/sd-vae-ft-ema").to(device)
@@ -318,20 +319,27 @@ def main(args):
         ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
         ema.to(device)
     else:
-        assert not (args.pretrain_ema_ckpt and args.pretrain_ckpt)
         if args.pretrain_ckpt is not None:
             state_dict = torch.load(args.pretrain_ckpt, map_location="cpu", weights_only=True)
-            model.load_state_dict(state_dict)
+            # strict=False: legacy ckpts always contain both upsampler and matched-depth
+            # decoder subtrees; the new model may build only one of them. Any unexpected
+            # key must come from those two skipped subtrees, and missing keys must be empty.
+            missing, unexpected = model.load_state_dict(state_dict, strict=False)
+            allowed_unexpected_prefixes = (
+                "lr_condition_modules.decoder.upsampler.",
+                "lr_condition_modules.decoder.decoder.",
+            )
+            bad_unexpected = [k for k in unexpected if not k.startswith(allowed_unexpected_prefixes)]
+            if missing or bad_unexpected:
+                raise RuntimeError(
+                    f"pretrain_ckpt load mismatch.\n  missing={missing}\n  unexpected (unaccounted)={bad_unexpected}"
+                )
             if accelerator.is_main_process:
-                logger.info(f"Initialized model weights from {args.pretrain_ckpt}")
+                logger.info(f"Initialized model weights from {args.pretrain_ckpt} "
+                            f"(skipped {len(unexpected)} keys from unbuilt cond-decoder subtrees)")
         model, optimizer = accelerator.prepare(model, optimizer)
         ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
         ema.to(device)
-        if args.pretrain_ema_ckpt is not None:
-            ema_path = f"{args.output_dir}/ema/{args.pretrain_ema_ckpt}"
-            ema.load_state_dict(torch.load(ema_path, map_location="cpu", weights_only=True))
-            ema.copy_to(model.parameters())
-            ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
         
     if args.resume_step > 0:
         ema_path = f"{save_dir}/checkpoints/acc_step_{args.resume_step:07d}/ema.pt"
@@ -493,8 +501,6 @@ def parse_args(input_args=None):
                         help="Steps interval for checkpointing.")
     parser.add_argument("--resume-step", type=int, default=0,
                         help="Step to resume training from.")
-    parser.add_argument("--pretrain_ema_ckpt", type=str, default=None,
-                        help="Path to an EMA state_dict (.pt).")
     parser.add_argument("--pretrain_ckpt", type=str, default=None,
                         help="Path to a plain model state_dict (.pt).")
 

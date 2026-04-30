@@ -117,6 +117,7 @@ def run_evaluation(args):
         backbone_args=backbone_args,
         conditioning_args=conditioning_args,
         common_z_types=common_z_types,
+        task_configs=task_configs,
     ).to(device)
 
     logger.info(f"Model Parameters: {sum(p.numel() for p in model.parameters()):,}")
@@ -124,8 +125,20 @@ def run_evaluation(args):
     # Load checkpoint
     ckpt_path = os.path.join(args.ckpt_dir, f"acc_step_{args.resume_steps:07d}", "ema_named.pt")
     state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
-    model.load_state_dict(state_dict)
-    logger.info(f"Loaded checkpoint from {ckpt_path}")
+    # strict=False: legacy ckpts always contain both upsampler and matched-depth
+    # decoder subtrees; this model may build only one of them.
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    allowed_unexpected_prefixes = (
+        "lr_condition_modules.decoder.upsampler.",
+        "lr_condition_modules.decoder.decoder.",
+    )
+    bad_unexpected = [k for k in unexpected if not k.startswith(allowed_unexpected_prefixes)]
+    if missing or bad_unexpected:
+        raise RuntimeError(
+            f"checkpoint load mismatch.\n  missing={missing}\n  unexpected (unaccounted)={bad_unexpected}"
+        )
+    logger.info(f"Loaded checkpoint from {ckpt_path} "
+                f"(skipped {len(unexpected)} keys from unbuilt cond-decoder subtrees)")
 
     model.eval()
 

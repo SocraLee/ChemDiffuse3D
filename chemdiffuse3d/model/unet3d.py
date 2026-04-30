@@ -240,55 +240,69 @@ class DecoderModule(nn.Module):
     """
     Decoder that produces both dense and compressed conditioning embeddings
     from the encoder bottleneck features.
+
+    Either or both of the depth-upsampler (D=5 -> D=20, for 4x SR tasks) and the
+    matched-depth decoder branches can be built, controlled by `with_upsampler`
+    and `with_decoder`. The branch chosen at forward time depends on the input
+    depth.
     """
 
     def __init__(self, in_channels,
                  out_embedding_dim, out_concat_dim,
-                 norm_groups=32, dropout_p=0.0):
+                 norm_groups=32, dropout_p=0.0,
+                 with_upsampler=True, with_decoder=True):
         super().__init__()
 
-        channels = [in_channels]
-        current_channels = in_channels
+        if with_upsampler:
+            channels = [in_channels]
+            current_channels = in_channels
+            num_upsamples = 2
+            upsampler_layers = []
+            for _ in range(num_upsamples - 1):
+                if current_channels // 2 >= out_embedding_dim:
+                    current_channels //= 2
+                channels.append(current_channels)
+            channels.append(out_embedding_dim)
+            for i in range(num_upsamples):
+                in_c = channels[i]
+                out_c = channels[i + 1]
+                block = nn.Sequential(
+                    ResnetBlock3D(in_c, in_c, norm_groups=norm_groups, dropout=dropout_p),
+                    nn.ConvTranspose3d(in_c, out_c, kernel_size=(4, 1, 1), stride=(2, 1, 1),
+                                       padding=(1, 0, 0)),
+                    Swish()
+                )
+                upsampler_layers.append(block)
+            self.upsampler = nn.Sequential(*upsampler_layers)
 
-        # Create depth upsampler (for D=5 -> D=20)
-        num_upsamples = 2
-        upsampler_layers = []
-        for _ in range(num_upsamples - 1):
-            if current_channels // 2 >= out_embedding_dim:
-                current_channels //= 2
-            channels.append(current_channels)
-        channels.append(out_embedding_dim)
-        for i in range(num_upsamples):
-            in_c = channels[i]
-            out_c = channels[i + 1]
-            block = nn.Sequential(
-                ResnetBlock3D(in_c, in_c, norm_groups=norm_groups, dropout=dropout_p),
-                nn.ConvTranspose3d(in_c, out_c, kernel_size=(4, 1, 1), stride=(2, 1, 1),
-                                   padding=(1, 0, 0)),
-                Swish()
-            )
-            upsampler_layers.append(block)
-        self.upsampler = nn.Sequential(*upsampler_layers)
+        if with_decoder:
+            decoder_layers = [
+                nn.Sequential(
+                    ResnetBlock3D(in_channels, in_channels, norm_groups=norm_groups, dropout=dropout_p),
+                    Swish(),
+                    ResnetBlock3D(in_channels, out_embedding_dim, norm_groups=norm_groups, dropout=dropout_p),
+                    Swish()
+                )
+            ]
+            self.decoder = nn.Sequential(*decoder_layers)
 
-        # Standard decoder (for matched depth)
-        decoder_layers = [
-            nn.Sequential(
-                ResnetBlock3D(in_channels, in_channels, norm_groups=norm_groups, dropout=dropout_p),
-                Swish(),
-                ResnetBlock3D(in_channels, out_embedding_dim, norm_groups=norm_groups, dropout=dropout_p),
-                Swish()
-            )
-        ]
-        self.decoder = nn.Sequential(*decoder_layers)
         self.compression_head = nn.Conv3d(out_embedding_dim, out_concat_dim, kernel_size=1)
 
     def forward(self, x):
         b, c, d, h, w = x.shape
         if d == 5:
-            # Use depth upsampling for super-resolution tasks (D=5 -> D=20)
+            if not hasattr(self, 'upsampler'):
+                raise RuntimeError(
+                    f"Got LR input depth={d} but upsampler was not built. "
+                    "Add a task with output_depth/input_depth == 4 to task_configs."
+                )
             x = self.upsampler(x)
         else:
-            # Use standard decoder for matched-depth tasks (e.g., denoising)
+            if not hasattr(self, 'decoder'):
+                raise RuntimeError(
+                    f"Got LR input depth={d} but matched-depth decoder was not built. "
+                    "Add a task with input_depth == output_depth to task_configs."
+                )
             x = self.decoder(x)
         compressed_x = self.compression_head(x)
         return x, compressed_x
@@ -304,7 +318,7 @@ class Shared_LR_Conditioning_Module(nn.Module):
     - compressed_embedding: Compressed embedding (B, Seq, out_concat_dim) for concatenation
     """
 
-    def __init__(self, conditioning_args):
+    def __init__(self, conditioning_args, with_upsampler=True, with_decoder=True):
         super().__init__()
         params = conditioning_args['lr_encoder_params']
         self.encoder = EncoderModule(
@@ -317,6 +331,8 @@ class Shared_LR_Conditioning_Module(nn.Module):
             out_concat_dim=params.get('out_concat_dim'),
             norm_groups=params.get('norm_groups', 8),
             dropout_p=params.get('dropout_p', 0.0),
+            with_upsampler=with_upsampler,
+            with_decoder=with_decoder,
         )
 
     def forward(self, lr_image_3d):
