@@ -309,6 +309,7 @@ def main(args):
 
     # --- Resume from checkpoint ---
     if args.resume_step > 0:
+        model, optimizer = accelerator.prepare(model, optimizer)
         ckpt_path = f"{save_dir}/checkpoints/acc_step_{args.resume_step:07d}"
         accelerator.load_state(ckpt_path)
         global_step = args.resume_step
@@ -318,19 +319,19 @@ def main(args):
         ema.to(device)
     else:
         assert not (args.pretrain_ema_ckpt and args.pretrain_ckpt)
-        ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
-        ema.to(device)
         if args.pretrain_ckpt is not None:
             state_dict = torch.load(args.pretrain_ckpt, map_location="cpu", weights_only=True)
             model.load_state_dict(state_dict)
             if accelerator.is_main_process:
                 logger.info(f"Initialized model weights from {args.pretrain_ckpt}")
+        model, optimizer = accelerator.prepare(model, optimizer)
+        ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
+        ema.to(device)
         if args.pretrain_ema_ckpt is not None:
             ema_path = f"{args.output_dir}/ema/{args.pretrain_ema_ckpt}"
             ema.load_state_dict(torch.load(ema_path, map_location="cpu", weights_only=True))
             ema.copy_to(model.parameters())
             ema = ExponentialMovingAverage(model.parameters(), decay=0.9999)
-    model, optimizer = accelerator.prepare(model, optimizer)
         
     if args.resume_step > 0:
         ema_path = f"{save_dir}/checkpoints/acc_step_{args.resume_step:07d}/ema.pt"
