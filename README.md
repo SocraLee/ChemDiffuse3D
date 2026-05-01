@@ -1,12 +1,12 @@
-# ChemDiffuse3D
+# MicroDiffuse3D
 
 **A Foundation Model for Volumetric Microscopy Image Restoration**
 
 This repository contains the source code accompanying the following manuscript in preparation:
 
-> **ChemDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration**
+> **MicroDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration**
 
-ChemDiffuse3D is a conditional diffusion model for volumetric (3D) microscopy image restoration. It addresses multiple restoration tasks within a single unified framework:
+MicroDiffuse3D is a conditional diffusion model for volumetric (3D) microscopy image restoration. It addresses multiple restoration tasks within a single unified framework:
 
 - **3D Super-Resolution** — Recovers high-resolution lateral and axial information from sparsely-sampled Z-stacks (e.g., 4× lateral & 4× axial)
 - **3D Denoising** — Removes noise from low signal-to-noise ratio (SNR) volumetric acquisitions
@@ -14,7 +14,7 @@ ChemDiffuse3D is a conditional diffusion model for volumetric (3D) microscopy im
 
 ## Architecture
 
-ChemDiffuse3D combines:
+MicroDiffuse3D combines:
 1. **SiT-3D Backbone** — A 3D Diffusion Transformer (Scalable Interpolant Transformer) with Anisotropic Lateral-Axial Attention for efficient processing of volumetric data
 2. **3D UNet Conditioning Module** — Encodes low-resolution input volumes into dense conditioning signals
 3. **Post-Diffusion Decoders** — Adapted and Fused decoder variants for pixel-space refinement
@@ -23,15 +23,15 @@ ChemDiffuse3D combines:
 ## Installation
 ### Step 1: Clone the repository
 ```bash
-git clone https://github.com/SocraLee/ChemDiffuse3D.git
-cd ChemDiffuse3D
+git clone https://github.com/SocraLee/MicroDiffuse3D.git
+cd MicroDiffuse3D
 ```
 
 ### Step 2: Create a Virtual Environment (Recommended)
 
 ```bash
-conda create -n chemdiffuse3d python=3.10 -y
-conda activate chemdiffuse3d
+conda create -n microdiffuse3d python=3.10 -y
+conda activate microdiffuse3d
 ```
 
 ### Step 3: Install Dependencies
@@ -59,7 +59,7 @@ A small example dataset (`demo_data.h5`) will be made available upon publication
 ### Running the Demo
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
+CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
@@ -69,7 +69,7 @@ CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
 
 ### Expected Output
 
-- Predicted high-resolution volumes are saved into the input HDF5 file under the key `chemdiffuse3d_output`
+- Predicted high-resolution volumes are saved into the input HDF5 file under the key `microdiffuse3d_output`
 - Console output reports per-task PSNR and SSIM metrics
 
 **Expected runtime:** ~5 minutes for a single test volume on one NVIDIA A100 GPU.
@@ -99,6 +99,12 @@ python data_processing/prepare_features.py \
 
 Update the data paths in the task configuration files under `configs/` by replacing `<YOUR_DATA_PATH>` with your local data directory.
 
+To reproduce the paper results, the processed data can be found at the following Zenodo links:
+
+SRS 3D Denoise data: placeholder
+SRS 3D SR data: https://zenodo.org/records/19929571
+BioTISR data: placeholder
+
 ### Step 2: Training
 
 **Single-task training (e.g., 3D Super-Resolution 4×):**
@@ -107,7 +113,7 @@ Update the data paths in the task configuration files under `configs/` by replac
 accelerate launch \
     --gpu_ids 0,1 \
     --num_processes 2 \
-    chemdiffuse3d/train.py \
+    microdiffuse3d/train.py \
     --output-dir ./outputs \
     --exp-name 3dsr4z_experiment \
     --backbone_args_json ./configs/backbone_config.json \
@@ -130,7 +136,7 @@ See `scripts/train.sh` for additional examples.
 ### Step 3: Evaluation
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
+CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
@@ -144,13 +150,13 @@ Train and apply a post-diffusion decoder for enhanced pixel-space refinement:
 
 ```bash
 # Train an adapted decoder
-python chemdiffuse3d/train_decoder.py \
+python microdiffuse3d/train_decoder.py \
     --task_configs_json configs/3dsr4z_config.json \
     --exp-name 3dsr4z_adapted \
     --save-dir ./outputs/decoder
 
 # Evaluate with the trained decoder
-CUDA_VISIBLE_DEVICES=0 python chemdiffuse3d/generate.py \
+CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
@@ -175,7 +181,7 @@ python figures/f3pab.py   # Figure 3 panels a,b
 
 ## Architecture Overview
 
-ChemDiffuse3D integrates the following components:
+MicroDiffuse3D integrates the following components:
 
 1. **SiT-3D Backbone** — A 3D Diffusion Transformer (Scalable Interpolant Transformer) with Anisotropic Lateral-Axial Attention for efficient processing of volumetric data
 2. **3D UNet Conditioning Module** — Encodes low-resolution input volumes into dense conditioning signals for the diffusion backbone
@@ -206,8 +212,8 @@ Update the `train_data_dir` and `dev_data_dir` fields in the task config JSON fi
 ## Project Structure
 
 ```
-ChemDiffuse3D/
-├── chemdiffuse3d/               # Main Python package
+MicroDiffuse3D/
+├── microdiffuse3d/               # Main Python package
 │   ├── train.py                 # Multi-task distributed training
 │   ├── generate.py              # Inference and evaluation
 │   ├── train_decoder.py         # Post-diffusion decoder training
@@ -250,8 +256,8 @@ Pre-trained model checkpoints are available at: [Zenodo/HuggingFace link TBD].
 If you use this code in your research, please cite:
 
 ```bibtex
-@article{li2026chemdiffuse3d,
-  title   = {ChemDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration},
+@article{li2026microdiffuse3d,
+  title   = {MicroDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration},
   author  = {Yongkang Li et al.},
   journal = {Nature Methods},
   year    = {2026}
@@ -278,4 +284,4 @@ This work builds upon the following open-source projects:
 
 ## Contact
 
-For questions or issues regarding this code, please open a [GitHub Issue](https://github.com/SocraLee/ChemDiffuse3D/issues) or contact the corresponding author.
+For questions or issues regarding this code, please open a [GitHub Issue](https://github.com/SocraLee/MicroDiffuse3D/issues) or contact the corresponding author.

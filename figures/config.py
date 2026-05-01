@@ -1,5 +1,5 @@
 """
-Figure Configuration for ChemDiffuse3D.
+Figure Configuration for MicroDiffuse3D.
 
 This file contains all paths and settings for generating paper figures.
 Edit the paths below to point to your local data files before running
@@ -36,9 +36,9 @@ RESULTS_PATHS = {
 # =============================================================================
 
 RESULT_KEYS = {
-    "chemdiffuse3d": "chemdiffuse3d_output",
-    "chemdiffuse3d_rcan": "chemdiffuse3d_output_rcan",
-    "chemdiffuse3d_fused": "chemdiffuse3d_output_fused",
+    "microdiffuse3d": "microdiffuse3d_output",
+    "microdiffuse3d_rcan": "microdiffuse3d_output_rcan",
+    "microdiffuse3d_fused": "microdiffuse3d_output_fused",
     "ground_truth_hr": "hr_cube",
     "ground_truth_hr_denoise": "hr_denoise_cube",
     "low_resolution": "lr_cube",
@@ -68,9 +68,9 @@ os.makedirs(FIGURE_OUTPUT_DIR, exist_ok=True)
 
 # Color palette for methods
 METHOD_COLORS = {
-    "ChemDiffuse3D": "#2196F3",       # Blue
-    "ChemDiffuse3D+RCAN": "#1565C0",  # Dark Blue
-    "ChemDiffuse3D+Fused": "#0D47A1", # Darker Blue
+    "MicroDiffuse3D": "#2196F3",       # Blue
+    "MicroDiffuse3D+RCAN": "#1565C0",  # Dark Blue
+    "MicroDiffuse3D+Fused": "#0D47A1", # Darker Blue
     "CARE": "#FF9800",                 # Orange
     "3DRCAN": "#4CAF50",               # Green
     "SwinIR": "#9C27B0",               # Purple
@@ -86,8 +86,8 @@ METHOD_ORDER = [
     "CARE",
     "3DRCAN",
     "SwinIR",
-    "ChemDiffuse3D",
-    "ChemDiffuse3D+RCAN",
-    "ChemDiffuse3D+Fused",
+    "MicroDiffuse3D",
+    "MicroDiffuse3D+RCAN",
+    "MicroDiffuse3D+Fused",
     "Ground Truth",
 ]

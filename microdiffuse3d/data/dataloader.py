@@ -1,5 +1,5 @@
 """
-Multi-task DataLoader for ChemDiffuse3D.
+Multi-task DataLoader for MicroDiffuse3D.
 
 Implements weighted random sampling across multiple task-specific
 dataloaders with infinite cycling.

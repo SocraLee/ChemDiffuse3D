@@ -1,5 +1,5 @@
 #!/bin/bash
-# ChemDiffuse3D Training Script
+# MicroDiffuse3D Training Script
 # Requires: HuggingFace Accelerate (configured via `accelerate config`)
 
 # ==========================================
@@ -8,7 +8,7 @@
 accelerate launch \
     --gpu_ids 0,1 \
     --num_processes 2 \
-    chemdiffuse3d/train.py \
+    microdiffuse3d/train.py \
     --report-to="wandb" \
     --allow-tf32 \
     --mixed-precision="fp16" \
@@ -27,7 +27,7 @@ accelerate launch \
     --backbone_args_json ./configs/backbone_config.json \
     --task_configs_json ./configs/3dsr4z_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
-    --project-name "ChemDiffuse3D"
+    --project-name "MicroDiffuse3D"
 
 # ==========================================
 # With REPA (REPresentation Alignment) loss
@@ -35,7 +35,7 @@ accelerate launch \
 # accelerate launch \
 #     --gpu_ids 0,1 \
 #     --num_processes 2 \
-#     chemdiffuse3d/train.py \
+#     microdiffuse3d/train.py \
 #     --report-to="wandb" \
 #     --allow-tf32 \
 #     --mixed-precision="fp16" \
@@ -56,7 +56,7 @@ accelerate launch \
 #     --backbone_args_json ./configs/backbone_config.json \
 #     --task_configs_json ./configs/3dsr4z_config.json \
 #     --conditioning_args_json ./configs/encoder_config.json \
-#     --project-name "ChemDiffuse3D_REPA"
+#     --project-name "MicroDiffuse3D_REPA"
 
 # ==========================================
 # Multi-task joint training
@@ -64,7 +64,7 @@ accelerate launch \
 # accelerate launch \
 #     --gpu_ids 0,1,2,3 \
 #     --num_processes 4 \
-#     chemdiffuse3d/train.py \
+#     microdiffuse3d/train.py \
 #     --report-to="wandb" \
 #     --allow-tf32 \
 #     --mixed-precision="fp16" \
@@ -83,4 +83,4 @@ accelerate launch \
 #     --backbone_args_json ./configs/backbone_config.json \
 #     --task_configs_json ./configs/task_config.json \
 #     --conditioning_args_json ./configs/encoder_config.json \
-#     --project-name "ChemDiffuse3D_Joint"
+#     --project-name "MicroDiffuse3D_Joint"

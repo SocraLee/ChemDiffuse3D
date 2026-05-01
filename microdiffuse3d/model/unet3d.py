@@ -1,5 +1,5 @@
 """
-3D UNet-based LR Conditioning Module for ChemDiffuse3D.
+3D UNet-based LR Conditioning Module for MicroDiffuse3D.
 
 Encodes the low-resolution 3D microscopy volume into conditioning
 signals for the SiT-3D backbone: a dense embedding for cross-attention

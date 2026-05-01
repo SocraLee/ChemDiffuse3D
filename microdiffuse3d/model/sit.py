@@ -1,5 +1,5 @@
 """
-Core SiT (Scalable Interpolant Transformer) components for ChemDiffuse3D.
+Core SiT (Scalable Interpolant Transformer) components for MicroDiffuse3D.
 
 Includes: TimestepEmbedder, ConditionFuser, REPA projectors (DINOv2, CLIP),
 FinalLayer, and dynamic 3D positional embeddings.

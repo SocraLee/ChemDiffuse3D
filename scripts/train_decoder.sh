@@ -1,12 +1,12 @@
 #!/bin/bash
-# ChemDiffuse3D Post-Diffusion Decoder Training
+# MicroDiffuse3D Post-Diffusion Decoder Training
 
 # ==========================================
 # Adapted Decoder for 3D Super-Resolution
 # ==========================================
-python chemdiffuse3d/train_decoder.py \
+python microdiffuse3d/train_decoder.py \
     --task_configs_json configs/3dsr4z_config.json \
-    --project-name ChemDiffuse3D_Decoder \
+    --project-name MicroDiffuse3D_Decoder \
     --exp-name 3dsr4z_adapted \
     --decoder-type adapted \
     --save-dir ./outputs/decoder \
@@ -20,9 +20,9 @@ python chemdiffuse3d/train_decoder.py \
 # ==========================================
 # Adapted Decoder for 3D Denoising
 # ==========================================
-# python chemdiffuse3d/train_decoder.py \
+# python microdiffuse3d/train_decoder.py \
 #     --task_configs_json configs/3ddenoise_config.json \
-#     --project-name ChemDiffuse3D_Decoder \
+#     --project-name MicroDiffuse3D_Decoder \
 #     --exp-name denoise_adapted \
 #     --decoder-type adapted \
 #     --save-dir ./outputs/decoder \

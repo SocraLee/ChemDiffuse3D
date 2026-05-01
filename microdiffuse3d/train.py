@@ -1,5 +1,5 @@
 """
-ChemDiffuse3D Training Script.
+MicroDiffuse3D Training Script.
 
 Multi-task joint training with HuggingFace Accelerate for distributed training.
 Supports REPA (REPresentation Alignment) loss and EMA model averaging.
@@ -470,7 +470,7 @@ def main(args):
 
 
 def parse_args(input_args=None):
-    parser = argparse.ArgumentParser(description="ChemDiffuse3D Training")
+    parser = argparse.ArgumentParser(description="MicroDiffuse3D Training")
 
     # Logging
     parser.add_argument("--output-dir", type=str, required=True)
@@ -519,7 +519,7 @@ def parse_args(input_args=None):
     parser.add_argument("--prediction", type=str, default="v", choices=["v"])
     parser.add_argument("--cfg-prob", type=float, default=0.)
     parser.add_argument("--cfg-scale", type=float, default=1.0)
-    parser.add_argument("--project-name", type=str, default='ChemDiffuse3D')
+    parser.add_argument("--project-name", type=str, default='MicroDiffuse3D')
     parser.add_argument("--weighting", default="uniform", type=str)
 
     # REPA (optional)

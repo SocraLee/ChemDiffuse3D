@@ -1,5 +1,5 @@
 """
-Diffusion samplers for ChemDiffuse3D.
+Diffusion samplers for MicroDiffuse3D.
 
 Implements Euler ODE and Euler-Maruyama SDE samplers for
 flow-matching diffusion models with classifier-free guidance support.

@@ -1,5 +1,5 @@
 """
-JointModel: Top-level model wrapper for ChemDiffuse3D.
+JointModel: Top-level model wrapper for MicroDiffuse3D.
 
 Composes the SiT-3D backbone, timestep embedder, condition fuser,
 and LR conditioning module into a single nn.Module.

@@ -19,7 +19,7 @@ mm = nature_style.apply_nature_style()
 
 # ── 2. Data loading ──
 h5_path = ('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
-           'ChemDiffuse/3DSR4z_comparision/metrics.h5')
+           'MicroDiffuse/3DSR4z_comparision/metrics.h5')
 
 # HDF5 key prefix → display name
 methods = {

@@ -36,7 +36,7 @@ def load_data(idx=1281, data_path=None, use_cache=False):
     import h5py
     if data_path is None:
         data_path = ('../../../../../../../../m-chimera/chimera/nobackup/'
-                     'yongkang/ChemDiffuse/3DSR4z_comparision/results.h5')
+                     'yongkang/MicroDiffuse/3DSR4z_comparision/results.h5')
 
     with h5py.File(data_path, 'r') as f:
         hr = np.array(f['hr'][idx]).squeeze()

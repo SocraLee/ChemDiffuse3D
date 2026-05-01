@@ -13,7 +13,7 @@ plt.rcParams['mathtext.default'] = 'regular'
 
 
 def get_image(idx=124):
-    data_dir = '../../../../../../../../m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5'
+    data_dir = '../../../../../../../../m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5'
     data = h5py.File(data_dir, 'r')
     hr = torch.from_numpy(data['hr'][idx]).squeeze()
     lr = torch.from_numpy(data['lr'][idx]).squeeze()

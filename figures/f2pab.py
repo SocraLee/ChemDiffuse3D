@@ -28,11 +28,11 @@ palette_dict = {
 }
 
 # Load metrics from HDF5
-folder_name = "ChemDiffuse/3DSR4z_comparision"
+folder_name = "MicroDiffuse/3DSR4z_comparision"
 file_name = f'../../../../../../../../m-chimera/chimera/nobackup/yongkang/{folder_name}/metrics.h5'
 df_1 = build_long_dataframe(file_name, "3DSR")
 
-folder_name = "ChemDiffuse/BioTISR_spatial_comparision"
+folder_name = "MicroDiffuse/BioTISR_spatial_comparision"
 file_name = f'../../../../../../../../m-chimera/chimera/nobackup/yongkang/{folder_name}/metrics.h5'
 df_2 = build_long_dataframe(file_name, "BioTISR")
 df = pd.concat([df_1, df_2])
@@ -44,9 +44,9 @@ gs_left = gs_master[0, 0].subgridspec(2, 1, hspace=0.1)
 
 # Panel a: dataset example images
 zSR_lr_raw, zSR_hr_raw = read_raw_image(
-    "../../../../../../../../m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5", 4, 2, 10)
+    "../../../../../../../../m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5", 4, 2, 10)
 biotisr_lr_raw, biotisr_hr_raw = read_raw_image(
-    '../../../../../../../../m-chimera/chimera/nobackup/yongkang/ChemDiffuse/BioTISR_spatial_comparision/results.h5', 0, 0, 0)
+    '../../../../../../../../m-chimera/chimera/nobackup/yongkang/MicroDiffuse/BioTISR_spatial_comparision/results.h5', 0, 0, 0)
 
 datasets_config = [
     ("3DSR", zSR_lr_raw, zSR_hr_raw),

@@ -20,14 +20,14 @@ read_cache = True
 
 if os.path.exists(cache_file) and read_cache:
     df_bell = pd.read_csv(cache_file)
-    data = h5py.File('/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
+    data = h5py.File('/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
     if hr.shape != lr.shape:
         inputs = lr.unsqueeze(1)
         lr = F.interpolate(inputs, size=(hr.shape[1], 256, 256), mode='trilinear', align_corners=False).squeeze(1)
 else:
-    data = h5py.File('/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
+    data = h5py.File('/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
     if hr.shape != lr.shape:

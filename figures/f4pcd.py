@@ -68,7 +68,7 @@ def computer_metrics(hr, lr, baseline, ours) -> pd.DataFrame:
 if os.path.exists(cache_file) and read_cache:
     df = pd.read_csv(cache_file)
     data = h5py.File('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
-                     'ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
+                     'MicroDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
     sit = torch.from_numpy(data['sit_pretrain_output_adapted'][:]).squeeze()
@@ -79,7 +79,7 @@ if os.path.exists(cache_file) and read_cache:
                            mode='trilinear', align_corners=False).squeeze(1)
 else:
     data = h5py.File('../../../../../../../../m-chimera/chimera/nobackup/yongkang/'
-                     'ChemDiffuse/3DSR4z_comparision/results.h5', 'r')
+                     'MicroDiffuse/3DSR4z_comparision/results.h5', 'r')
     hr = torch.from_numpy(data['hr'][:]).squeeze()
     lr = torch.from_numpy(data['lr'][:]).squeeze()
     sit = torch.from_numpy(data['sit_pretrain_output_adapted'][:]).squeeze()

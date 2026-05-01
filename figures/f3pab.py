@@ -27,7 +27,7 @@ palette_dict = {
     'Inputs':   '#D9D9D9',
 }
 
-folder_name = "ChemDiffuse/3DDenoise_comparision"
+folder_name = "MicroDiffuse/3DDenoise_comparision"
 file_name = f'/m-chimera/chimera/nobackup/yongkang/{folder_name}/metrics.h5'
 df = build_long_dataframe(file_name, "")
 
@@ -38,7 +38,7 @@ gs_left = gs_master[0, 0]
 
 # Panel a: example image pair
 lr_raw, hr_raw = read_raw_image(
-    "/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DDenoise_comparision/results.h5", 119, 10, 10)
+    "/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DDenoise_comparision/results.h5", 119, 10, 10)
 name, img_lr, img_hr = ("3D Denoise", lr_raw, hr_raw)
 gs_inner = gs_left.subgridspec(1, 2, wspace=0.05)
 ax_lr = fig.add_subplot(gs_inner[0])

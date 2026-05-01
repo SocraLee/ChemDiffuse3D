@@ -1,5 +1,5 @@
 """
-ChemDiffuse3D Decoder Training Script.
+MicroDiffuse3D Decoder Training Script.
 
 Trains the post-diffusion adapted decoder that takes VAE latents
 and LR volumes as input to produce high-resolution output images.
@@ -217,9 +217,9 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="ChemDiffuse3D Decoder Training")
+    parser = argparse.ArgumentParser(description="MicroDiffuse3D Decoder Training")
     parser.add_argument("--task_configs_json", type=str, required=True)
-    parser.add_argument("--project-name", type=str, default="ChemDiffuse3D_Decoder")
+    parser.add_argument("--project-name", type=str, default="MicroDiffuse3D_Decoder")
     parser.add_argument("--exp-name", type=str, required=True)
     parser.add_argument("--decoder-type", type=str, choices=['adapted'], default='adapted')
     parser.add_argument("--save-dir", type=str, required=True, help="Base directory to save decoder checkpoints")

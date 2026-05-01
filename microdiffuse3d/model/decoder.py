@@ -1,5 +1,5 @@
 """
-Post-diffusion decoder architecture for ChemDiffuse3D.
+Post-diffusion decoder architecture for MicroDiffuse3D.
 
 Converts VAE latent outputs from the diffusion process into
 full-resolution volumetric images, conditioned on the LR input.

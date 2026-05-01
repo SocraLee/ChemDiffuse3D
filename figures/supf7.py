@@ -19,9 +19,9 @@ import nature_style
 from tqdm import tqdm
 
 DATASETS = {
-    '3DSR':    '/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5',
-    'Denoise': '/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DDenoise_comparision/results.h5',
-    'BioTISR': '/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/BioTISR_spatial_comparision/results.h5',
+    '3DSR':    '/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5',
+    'Denoise': '/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DDenoise_comparision/results.h5',
+    'BioTISR': '/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/BioTISR_spatial_comparision/results.h5',
 }
 
 parser = argparse.ArgumentParser()

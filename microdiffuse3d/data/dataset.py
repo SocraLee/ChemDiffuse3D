@@ -1,5 +1,5 @@
 """
-Dataset classes for ChemDiffuse3D.
+Dataset classes for MicroDiffuse3D.
 
 Provides HDF5-based datasets for loading preprocessed 3D microscopy
 volumes along with their VAE latents and DINO embeddings.

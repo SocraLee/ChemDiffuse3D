@@ -179,7 +179,7 @@ def process_h5(data_dir, task_configs, dino_model_path=None, dino_config_path=No
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Preprocess microscopy data for ChemDiffuse3D")
+    parser = argparse.ArgumentParser(description="Preprocess microscopy data for MicroDiffuse3D")
     parser.add_argument("--data_path", type=str, required=True,
                         help="Path to the HDF5 file containing raw microscopy volumes")
     parser.add_argument("--dino_model_path", type=str, default=None,

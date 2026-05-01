@@ -61,9 +61,9 @@ gs_master = fig.add_gridspec(1, 2, width_ratios=[1, 2], wspace=0.15)
 gs_left = gs_master[0, 0].subgridspec(2, 1, hspace=0.1)
 
 zSR_lr_raw, zSR_hr_raw = read_raw_image(
-    "/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5", 4, 2, 10)
+    "/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5", 4, 2, 10)
 biotisr_lr_raw, biotisr_hr_raw = read_raw_image(
-    '/m-chimera/chimera/nobackup/yongkang/ChemDiffuse/BioTISR_spatial_comparision/results.h5', 0, 0, 0)
+    '/m-chimera/chimera/nobackup/yongkang/MicroDiffuse/BioTISR_spatial_comparision/results.h5', 0, 0, 0)
 
 datasets_config = [
     ("3DSR", zSR_lr_raw, zSR_hr_raw),

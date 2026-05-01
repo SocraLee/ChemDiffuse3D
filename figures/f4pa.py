@@ -58,7 +58,7 @@ SHIFT_RANGE = 2                   # Z-shift matching range
 NUM_THRES = 10                    # Min avg cell count to keep sample
 
 # Data path (relative from plot_script/)
-H5_PATH = '../../../../../../../../m-chimera/chimera/nobackup/yongkang/ChemDiffuse/3DSR4z_comparision/results.h5'
+H5_PATH = '../../../../../../../../m-chimera/chimera/nobackup/yongkang/MicroDiffuse/3DSR4z_comparision/results.h5'
 
 # Cache paths
 MASK_CACHE = 'f4pa_new_masks.h5'      # Cellpose masks (run once)

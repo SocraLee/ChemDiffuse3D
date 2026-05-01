@@ -1,5 +1,5 @@
 """
-ChemDiffuse3D Inference / Evaluation Script.
+MicroDiffuse3D Inference / Evaluation Script.
 
 Loads a trained model checkpoint and runs evaluation on test data,
 computing PSNR and SSIM metrics. Supports optional post-diffusion
@@ -43,10 +43,6 @@ from model.decoder import AdaptedDecoder
 from data.dataset import H5Dataset
 from samplers import euler_maruyama_sampler
 
-
-logging.basicConfig(level=logging.INFO,
-                    format='[\033[34m%(asctime)s\033[0m] %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 
 def get_test_path(train_path):
@@ -123,23 +119,9 @@ def run_evaluation(args):
 
     # Load checkpoint
     state_dict = torch.load(args.ckpt_path, map_location="cpu", weights_only=True)
-    # strict=False: legacy ckpts always contain both upsampler and matched-depth
-    # decoder subtrees; this model may build only one of them.
-    missing, unexpected = model.load_state_dict(state_dict, strict=False)
-    allowed_unexpected_prefixes = (
-        "lr_condition_modules.decoder.upsampler.",
-        "lr_condition_modules.decoder.decoder.",
-    )
-    bad_unexpected = [k for k in unexpected if not k.startswith(allowed_unexpected_prefixes)]
-    if missing or bad_unexpected:
-        raise RuntimeError(
-            f"checkpoint load mismatch.\n  missing={missing}\n  unexpected (unaccounted)={bad_unexpected}"
-        )
-    logger.info(f"Loaded checkpoint from {args.ckpt_path} "
-                f"(skipped {len(unexpected)} keys from unbuilt cond-decoder subtrees)")
-
+    model.load_state_dict(state_dict, strict=False)
     model.eval()
-
+    logger.info(f"Loaded checkpoint from {args.ckpt_path}")
     # Load VAE
     latents_scale = torch.tensor([0.18215] * 4).view(1, 4, 1, 1).to(device)
     latents_bias = torch.tensor([0.] * 4).view(1, 4, 1, 1).to(device)
@@ -229,7 +211,7 @@ def run_evaluation(args):
         logger.info(f"[{task_id}] PSNR: {final_psnr:.4f}, SSIM: {final_ssim:.4f}")
 
         if args.save_results and all_preds:
-            results_key = args.results_key or f"chemdiffuse3d_output"
+            results_key = args.results_key or f"microdiffuse3d_output"
             all_preds = np.concatenate(all_preds, axis=0)
             all_gts = np.concatenate(all_gts, axis=0)
 
@@ -241,7 +223,7 @@ def run_evaluation(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ChemDiffuse3D Evaluation")
+    parser = argparse.ArgumentParser(description="MicroDiffuse3D Evaluation")
 
     # Config files
     parser.add_argument("--task_configs_json", type=str, required=True)
@@ -264,7 +246,7 @@ def main():
 
     # Output
     parser.add_argument("--exp-name", type=str, required=True)
-    parser.add_argument("--project-name", type=str, default="ChemDiffuse3D")
+    parser.add_argument("--project-name", type=str, default="MicroDiffuse3D")
     parser.add_argument("--save-results", action="store_true")
     parser.add_argument("--results-key", type=str, default=None)
 

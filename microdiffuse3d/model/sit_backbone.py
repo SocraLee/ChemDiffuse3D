@@ -1,5 +1,5 @@
 """
-SiT-3D Backbone for ChemDiffuse3D.
+SiT-3D Backbone for MicroDiffuse3D.
 
 Implements the 3D Scalable Interpolant Transformer backbone with
 factorized spatial-depth attention and REPA (REPresentation Alignment)
