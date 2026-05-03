@@ -213,7 +213,7 @@ If you use this code in your research, please cite:
 @article{li2026microdiffuse3d,
   title   = {MicroDiffuse3D: A Foundation Model for 3D Microscopy Imaging Restoration},
   author  = {Yongkang Li et al.},
-  journal = {Nature Methods},
+  <!-- journal = {Nature Methods}, -->
   year    = {2026}
 }
 ```
