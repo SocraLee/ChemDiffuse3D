@@ -48,64 +48,38 @@ accelerate config
 
 ---
 
-## Demo
+## Getting Started
 
-A minimal demonstration to verify correct installation and reproduce inference results.
+This section provides a guide on how to prepare your data, configure the model, and run training and inference pipelines.
 
-### Demo Data
+### Data Organization
 
-A small example dataset (`demo_data.h5`) will be made available upon publication at [Zenodo link TBD]. This file contains a subset of pre-processed test volumes with precomputed VAE latents and DINO embeddings.
+Training and evaluation data should be organized as HDF5 files containing the following structure:
 
-### Running the Demo
+| Key            | Shape                  | Description                                                     |
+| -------------- | ---------------------- | --------------------------------------------------------------- |
+| `hr_cube`      | `(N, D, H, W)`         | High-quality ground truth volumes                               |
+| `lr_cube`      | `(N, D_lr, H, W)`      | Low-quality input volumes                                       |
+| `vae_hr_cube`  | `(N, D, 8, 32, 32)`    | Precomputed VAE latents (mean + std)                            |
+| `dino_lr_cube` | `(N, D_lr, 256, 1024)` | Precomputed DINOv2 embeddings of LR slices                      |
+| `dino_hr_cube` | `(N, D, 256, 1024)`    | Precomputed DINOv2 embeddings of HR slices (optional, for REPA) |
 
-```bash
-CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
-    --task_configs_json ./configs/3dsr4z_config.json \
-    --backbone_args_json ./configs/backbone_config.json \
-    --conditioning_args_json ./configs/encoder_config.json \
-    --ckpt_path <PATH_TO_MODEL_PT> \
-    --exp-name demo_eval
-```
-
-### Expected Output
-
-- Predicted high-resolution volumes are saved into the input HDF5 file under the key `microdiffuse3d_output`
-- Console output reports per-task PSNR and SSIM metrics
-
-**Expected runtime:** ~5 minutes for a single test volume on one NVIDIA A100 GPU.
-
----
-
-## Reproducing Paper Results
-
-### Step 1: Data Preparation
-
-Training data should be organized as HDF5 files with the following structure:
-
-| Key                            | Shape                  | Description                                           |
-| ------------------------------ | ---------------------- | ----------------------------------------------------- |
-| `hr_cube` or `hr_denoise_cube` | `(N, D, H, W)`         | High-resolution ground truth volumes                  |
-| `lr_cube`                      | `(N, D_lr, H, W)`      | Low-resolution input volumes                          |
-| `vae_hr_cube`                  | `(N, D, 8, 32, 32)`    | Precomputed VAE latents (mean + std)                  |
-| `dino_lr_cube`                 | `(N, D_lr, 256, 1024)` | Precomputed DINOv2 embeddings of LR slices            |
-| `dino_hr_cube`                 | `(N, D, 256, 1024)`    | Precomputed DINOv2 embeddings of HR slices (for REPA) |
-
-Use the preprocessing script to extract VAE and DINO features from raw volumes:
+To preprocess your own raw volumes into this format, use the feature extraction script:
 
 ```bash
 python data_processing/prepare_features.py \
     --data_path <path_to_your_h5_file>
 ```
 
-Update the data paths in the task configuration files under `configs/` by replacing `<YOUR_DATA_PATH>` with your local data directory.
+### Configuration
 
-To reproduce the paper results, the processed data can be found at the following Zenodo links:
+All tasks are defined by configuration JSON files in the `configs/` directory:
 
-SRS 3D Denoise data: placeholder
-SRS 3D SR data: https://zenodo.org/records/19929571
-BioTISR data: placeholder
+1. **Model Backbone:** Configure SiT-3D hyperparameters in `configs/backbone_config.json`.
+2. **Conditioning:** Configure the LR encoder in `configs/encoder_config.json`.
+3. **Data Paths:** In task-specific configs (e.g., `configs/3dsr4z_config.json`), update `train_data_dir` and `dev_data_dir` to point to your preprocessed HDF5 directories.
 
-### Step 2: Training
+### Training the Model
 
 **Single-task training (e.g., 3D Super-Resolution 4×):**
 
@@ -123,17 +97,24 @@ accelerate launch \
 
 **Multi-task joint training:**
 
-Use `configs/task_config.json` to define multiple tasks with sampling weights.
+Use `configs/task_config.json` to define multiple tasks with respective sampling weights.
 
-**With REPA loss (optional):**
+*Note: For Representation Alignment (REPA), append `--proj-coeff 0.5 --z-types dinov2 --z-weights 1.0` to the command.*
 
-Append `--proj-coeff 0.5 --z-types dinov2 --z-weights 1.0` to enable representation alignment. Note: REPA is not used for the main results in the paper but accelerates convergence in our experiments.
+### Finetuning the Post-Diffusion Decoder
 
-See `scripts/train.sh` for additional examples.
+To further refine pixel-space artifacts, you can train and apply an adapted post-diffusion decoder.
 
-**Expected training time:** ~72 hours for 400K steps on 2× NVIDIA A100 GPUs.
+```bash
+python microdiffuse3d/train_decoder.py \
+    --task_configs_json configs/3dsr4z_config.json \
+    --exp-name 3dsr4z_adapted \
+    --save-dir ./outputs/decoder
+```
 
-### Step 3: Evaluation
+### Generation / Inference
+
+Generate high-resolution predictions using a trained checkpoint:
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
@@ -141,21 +122,12 @@ CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --backbone_args_json ./configs/backbone_config.json \
     --conditioning_args_json ./configs/encoder_config.json \
     --ckpt_path ./outputs/<exp_name>/checkpoints/acc_step_<step>/model.pt \
-    --exp-name <exp_name>
+    --exp-name eval_results
 ```
 
-### Step 4: Post-Diffusion Decoder (Optional)
-
-Train and apply a post-diffusion decoder for enhanced pixel-space refinement:
+Evaluate with the finetuned decoder:
 
 ```bash
-# Train an adapted decoder
-python microdiffuse3d/train_decoder.py \
-    --task_configs_json configs/3dsr4z_config.json \
-    --exp-name 3dsr4z_adapted \
-    --save-dir ./outputs/decoder
-
-# Evaluate with the trained decoder
 CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --task_configs_json ./configs/3dsr4z_config.json \
     --backbone_args_json ./configs/backbone_config.json \
@@ -166,46 +138,36 @@ CUDA_VISIBLE_DEVICES=0 python microdiffuse3d/generate.py \
     --decoder-path ./outputs/decoder/adapted/3d_sr/best_decoder.pth
 ```
 
-See `scripts/eval.sh` and `scripts/train_decoder.sh` for additional examples.
+Predicted volumes will be saved directly into the input HDF5 file under the key `microdiffuse3d_output`. Console output will report PSNR and SSIM.
 
-### Step 5: Reproducing Figures
+---
 
-Figure reproduction scripts are provided in `figures/`. Edit `figures/config.py` to set the correct paths to your result files, then run individual figure scripts:
+## Reproducing Paper Results
+
+To directly reproduce the results reported in the manuscript, download the pre-trained checkpoints and processed datasets.
+
+### Pre-trained Checkpoint
+The unified multi-task foundation model checkpoint can be downloaded here:
+[**Download Pre-trained Checkpoint**](https://zenodo.org/records/19959440)
+
+### Processed Datasets
+
+Processed HDF5 datasets containing VAE and DINO embeddings are hosted on Zenodo. Download the respective splits below:
+
+|     Split      | SRS 3D Denoise                                                     | SRS 3D Super-Resolution                                            | BioTISR (Joint)                                                    |
+| :------------: | :----------------------------------------------------------------- | :----------------------------------------------------------------- | :----------------------------------------------------------------- |
+|   **Train**    | [Link (19929547)](https://zenodo.org/records/19929547)             | [Link (19929571)](https://zenodo.org/records/19929571)             | [Link (19938235)](https://zenodo.org/records/19938235)             |
+| **Validation** | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  |
+|    **Test**    | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) |
+
+### Reproducing Figures
+
+Figure reproduction scripts are provided in the `figures/` directory. Edit `figures/config.py` to set the correct paths to your downloaded test files and results, then run individual scripts:
 
 ```bash
 python figures/f2pab.py   # Figure 2 panels a,b
 python figures/f3pab.py   # Figure 3 panels a,b
 ```
-
----
-
-## Architecture Overview
-
-MicroDiffuse3D integrates the following components:
-
-1. **SiT-3D Backbone** — A 3D Diffusion Transformer (Scalable Interpolant Transformer) with Anisotropic Lateral-Axial Attention for efficient processing of volumetric data
-2. **3D UNet Conditioning Module** — Encodes low-resolution input volumes into dense conditioning signals for the diffusion backbone
-3. **Post-Diffusion Decoders** — Adapted and Fused decoder variants for pixel-space refinement from VAE latent space
-4. **REPA Alignment (optional)** — REPresentation Alignment loss using DINOv2 features for improved generation quality. This technique is not used in the paper, but in our initial experiments it accelerates the convergence speed.
-
----
-
-## Configuration
-
-### Model Configuration
-
-| File                            | Description                                                       |
-| ------------------------------- | ----------------------------------------------------------------- |
-| `configs/backbone_config.json`  | SiT-3D backbone hyperparameters (hidden size, depth, heads, etc.) |
-| `configs/encoder_config.json`   | LR conditioning encoder parameters                                |
-| `configs/3dsr4z_config.json`    | 3D super-resolution (4× Z) task setup                             |
-| `configs/3ddenoise_config.json` | 3D denoising task setup                                           |
-| `configs/biotisr_config.json`   | Joint degradation restoration task setup                          |
-| `configs/task_config.json`      | Multi-task joint training setup                                   |
-
-### Data Paths
-
-Update the `train_data_dir` and `dev_data_dir` fields in the task config JSON files to point to your HDF5 data files. Replace `<YOUR_DATA_PATH>` with your actual data directory.
 
 ---
 
@@ -243,11 +205,7 @@ MicroDiffuse3D/
 
 ---
 
-## Pre-trained Models
 
-Pre-trained model checkpoints are available at: [Zenodo/HuggingFace link TBD].
-
-*(Links will be updated upon publication.)*
 
 ---
 
