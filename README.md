@@ -154,11 +154,11 @@ The unified multi-task foundation model checkpoint can be downloaded here:
 
 Processed HDF5 datasets containing VAE and DINO embeddings are hosted on Zenodo. Download the respective splits below:
 
-|     Split      | SRS 3D Denoise                                                     | SRS 3D Super-Resolution                                            | BioTISR (Joint)                                                    |
-| :------------: | :----------------------------------------------------------------- | :----------------------------------------------------------------- | :----------------------------------------------------------------- |
-|   **Train**    | [Link (19929547)](https://zenodo.org/records/19929547)             | [Link (19929571)](https://zenodo.org/records/19929571)             | [Link (19938235)](https://zenodo.org/records/19938235)             |
-| **Validation** | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  | [Unified Val Set (19941581)](https://zenodo.org/records/19941581)  |
-|    **Test**    | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) | [Unified Test Set (19946789)](https://zenodo.org/records/19946789) |
+|     Split      | SRS 3D Super-Resolution                                        | SRS 3D Denoise                                                 | BioTISR (Joint)                                                |
+| :------------: | :------------------------------------------------------------- | :------------------------------------------------------------- | :------------------------------------------------------------- |
+|   **Train**    | [Link (19929571)](https://zenodo.org/records/19929571)         | [Link (19929547)](https://zenodo.org/records/19929547)         | [Link (19938235)](https://zenodo.org/records/19938235)         |
+| **Validation** | [Unified Link (19941581)](https://zenodo.org/records/19941581) | [Unified Link (19941581)](https://zenodo.org/records/19941581) | [Unified Link (19941581)](https://zenodo.org/records/19941581) |
+|    **Test**    | [Unified Link (19946789)](https://zenodo.org/records/19946789) | [Unified Link (19946789)](https://zenodo.org/records/19946789) | [Unified Link (19946789)](https://zenodo.org/records/19946789) |
 
 ### Reproducing Figures
 
@@ -202,10 +202,6 @@ MicroDiffuse3D/
 ├── LICENSE                      # MIT License
 └── README.md                    # This file
 ```
-
----
-
-
 
 ---
 
